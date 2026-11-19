@@ -26,9 +26,29 @@ GRANT SELECT, INSERT, UPDATE ON mediagenda.alergenos                   TO 'media
 GRANT SELECT, INSERT, UPDATE ON mediagenda.pruebas_cutaneas            TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE ON mediagenda.pruebas_cutaneas_resultados TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
 
+-- Sprint 2: notas, inmunoterapia y agenda
+GRANT SELECT, INSERT, UPDATE ON mediagenda.notas_evolucion       TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.inmunoterapias        TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.frascos               TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.aplicaciones          TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.reacciones_sistemicas TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.reglas_atraso         TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.citas                 TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+
+-- Anexos de notas: solo se agregan, nunca se modifican.
+GRANT SELECT, INSERT ON mediagenda.notas_evolucion_anexos TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+
+-- Esquema de dosis y alérgenos de la receta: se pueden quitar mientras no se hayan usado.
+-- Un paso ya aplicado no se borra porque aplicaciones lo referencia con ON DELETE RESTRICT.
+-- Toda eliminación queda en la auditoría.
+GRANT SELECT, INSERT, UPDATE, DELETE ON mediagenda.esquema_dosis          TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON mediagenda.inmunoterapia_alergeno TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+
 -- Solo lectura
-GRANT SELECT ON mediagenda.cie10     TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
-GRANT SELECT ON mediagenda.auditoria TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT ON mediagenda.cie10                 TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT ON mediagenda.auditoria             TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT ON mediagenda.v_proxima_aplicacion  TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT ON mediagenda.v_pacientes_atrasados TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
 
 -- Tablas internas de Laravel
 GRANT SELECT, INSERT, UPDATE, DELETE ON mediagenda.sessions              TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';

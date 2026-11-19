@@ -18,10 +18,14 @@ class DatabaseSeeder extends Seeder
             Cie10Seeder::class,
             AlergenoSeeder::class,
             UsuariosSeeder::class,
+            ReglaAtrasoSeeder::class,
         ]);
 
         if (app()->isLocal()) {
-            $this->call(PacientesDemoSeeder::class);
+            $this->call([
+                PacientesDemoSeeder::class,
+                ConsultorioDemoSeeder::class,
+            ]);
         }
     }
 }

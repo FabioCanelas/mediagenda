@@ -4,10 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\Alergeno;
 use App\Models\Alergia;
+use App\Models\Aplicacion;
+use App\Models\Cita;
 use App\Models\Diagnostico;
+use App\Models\Frasco;
 use App\Models\HistoriaClinica;
+use App\Models\Inmunoterapia;
+use App\Models\NotaEvolucion;
 use App\Models\Paciente;
 use App\Models\PruebaCutanea;
+use App\Models\ReaccionSistemica;
+use App\Models\ReglaAtraso;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -42,11 +49,22 @@ class AccesoPorRolTest extends TestCase
         $this->actingAs($recepcion)->get('/panel/usuarios')->assertForbidden();
     }
 
+    public function test_recepcion_usa_la_agenda_pero_no_ve_tratamientos_ni_notas(): void
+    {
+        $recepcion = User::factory()->recepcion()->create();
+
+        $this->actingAs($recepcion)->get('/panel/agenda')->assertOk();
+        $this->actingAs($recepcion)->get('/panel/agenda/semana')->assertOk();
+        $this->actingAs($recepcion)->get('/panel/notas-evolucion')->assertForbidden();
+        $this->actingAs($recepcion)->get('/panel/inmunoterapias')->assertForbidden();
+        $this->actingAs($recepcion)->get('/panel/reglas-atraso')->assertForbidden();
+    }
+
     public function test_la_doctora_entra_a_todas_las_secciones(): void
     {
         $doctora = User::factory()->doctora()->create();
 
-        foreach (['/panel/pacientes', '/panel/historias-clinicas', '/panel/prick-test', '/panel/alergenos', '/panel/usuarios'] as $ruta) {
+        foreach (['/panel/pacientes', '/panel/historias-clinicas', '/panel/prick-test', '/panel/alergenos', '/panel/usuarios', '/panel/agenda', '/panel/notas-evolucion', '/panel/inmunoterapias', '/panel/reglas-atraso'] as $ruta) {
             $this->actingAs($doctora)->get($ruta)->assertOk();
         }
     }
@@ -73,6 +91,18 @@ class AccesoPorRolTest extends TestCase
             'alérgenos: editar' => [Alergeno::class, 'update', true, false],
             'usuarios: crear' => [User::class, 'create', true, false],
             'usuarios: borrar' => [User::class, 'delete', false, false],
+            'notas: ver' => [NotaEvolucion::class, 'viewAny', true, false],
+            'notas: borrar' => [NotaEvolucion::class, 'delete', false, false],
+            'inmunoterapia: crear' => [Inmunoterapia::class, 'create', true, false],
+            'inmunoterapia: borrar' => [Inmunoterapia::class, 'delete', false, false],
+            'frascos: crear' => [Frasco::class, 'create', true, false],
+            'aplicaciones: crear' => [Aplicacion::class, 'create', true, false],
+            'aplicaciones: borrar' => [Aplicacion::class, 'delete', false, false],
+            'reacción sistémica: crear' => [ReaccionSistemica::class, 'create', true, false],
+            'reglas de atraso: editar' => [ReglaAtraso::class, 'update', true, false],
+            'citas: crear' => [Cita::class, 'create', true, true],
+            'citas: editar' => [Cita::class, 'update', true, true],
+            'citas: borrar' => [Cita::class, 'delete', false, false],
         ];
     }
 

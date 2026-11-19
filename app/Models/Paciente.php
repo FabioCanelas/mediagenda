@@ -80,6 +80,30 @@ class Paciente extends Model
     }
 
     /**
+     * @return HasMany<NotaEvolucion, $this>
+     */
+    public function notasEvolucion(): HasMany
+    {
+        return $this->hasMany(NotaEvolucion::class);
+    }
+
+    /**
+     * @return HasMany<Inmunoterapia, $this>
+     */
+    public function inmunoterapias(): HasMany
+    {
+        return $this->hasMany(Inmunoterapia::class);
+    }
+
+    /**
+     * @return HasMany<Cita, $this>
+     */
+    public function citas(): HasMany
+    {
+        return $this->hasMany(Cita::class);
+    }
+
+    /**
      * @return Attribute<string, never>
      */
     protected function nombreCompleto(): Attribute

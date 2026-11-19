@@ -7,6 +7,9 @@ use App\Filament\Resources\Pacientes\Pages\EditPaciente;
 use App\Filament\Resources\Pacientes\Pages\ListPacientes;
 use App\Filament\Resources\Pacientes\Pages\ViewPaciente;
 use App\Filament\Resources\Pacientes\RelationManagers\AlergiasRelationManager;
+use App\Filament\Resources\Pacientes\RelationManagers\CitasRelationManager;
+use App\Filament\Resources\Pacientes\RelationManagers\InmunoterapiasRelationManager;
+use App\Filament\Resources\Pacientes\RelationManagers\NotasEvolucionRelationManager;
 use App\Filament\Resources\Pacientes\RelationManagers\PruebasCutaneasRelationManager;
 use App\Filament\Resources\Pacientes\Schemas\PacienteForm;
 use App\Filament\Resources\Pacientes\Schemas\PacienteInfolist;
@@ -71,6 +74,9 @@ class PacienteResource extends Resource
     {
         return [
             AlergiasRelationManager::class,
+            CitasRelationManager::class,
+            NotasEvolucionRelationManager::class,
+            InmunoterapiasRelationManager::class,
             PruebasCutaneasRelationManager::class,
         ];
     }
