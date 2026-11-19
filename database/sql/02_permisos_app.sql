@@ -44,6 +44,21 @@ GRANT SELECT, INSERT ON mediagenda.notas_evolucion_anexos TO 'mediagenda_app'@'l
 GRANT SELECT, INSERT, UPDATE, DELETE ON mediagenda.esquema_dosis          TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON mediagenda.inmunoterapia_alergeno TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
 
+-- Sprint 3: estudios, ACT, consentimientos, recetas y pre-consulta
+-- En adjuntos y consentimientos un trigger limita qué columnas se pueden cambiar.
+GRANT SELECT, INSERT, UPDATE ON mediagenda.adjuntos          TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.cuestionarios_act TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.consentimientos   TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.recetas           TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON mediagenda.preconsultas      TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+
+-- Medicamentos de una receta: se quitan mientras la receta no se emitió
+-- (después lo impide un trigger). Toda eliminación queda en la auditoría.
+GRANT SELECT, INSERT, UPDATE, DELETE ON mediagenda.receta_medicamentos TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+
+-- Documentos emitidos: solo se agregan; ni UPDATE ni DELETE.
+GRANT SELECT, INSERT ON mediagenda.documentos_emitidos TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
+
 -- Solo lectura
 GRANT SELECT ON mediagenda.cie10                 TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';
 GRANT SELECT ON mediagenda.auditoria             TO 'mediagenda_app'@'localhost', 'mediagenda_app'@'127.0.0.1';

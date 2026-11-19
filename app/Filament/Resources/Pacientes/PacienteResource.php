@@ -6,17 +6,23 @@ use App\Filament\Resources\Pacientes\Pages\CreatePaciente;
 use App\Filament\Resources\Pacientes\Pages\EditPaciente;
 use App\Filament\Resources\Pacientes\Pages\ListPacientes;
 use App\Filament\Resources\Pacientes\Pages\ViewPaciente;
+use App\Filament\Resources\Pacientes\RelationManagers\AdjuntosRelationManager;
 use App\Filament\Resources\Pacientes\RelationManagers\AlergiasRelationManager;
 use App\Filament\Resources\Pacientes\RelationManagers\CitasRelationManager;
+use App\Filament\Resources\Pacientes\RelationManagers\ConsentimientosRelationManager;
+use App\Filament\Resources\Pacientes\RelationManagers\CuestionariosActRelationManager;
+use App\Filament\Resources\Pacientes\RelationManagers\DocumentosEmitidosRelationManager;
 use App\Filament\Resources\Pacientes\RelationManagers\InmunoterapiasRelationManager;
 use App\Filament\Resources\Pacientes\RelationManagers\NotasEvolucionRelationManager;
 use App\Filament\Resources\Pacientes\RelationManagers\PruebasCutaneasRelationManager;
+use App\Filament\Resources\Pacientes\RelationManagers\RecetasRelationManager;
 use App\Filament\Resources\Pacientes\Schemas\PacienteForm;
 use App\Filament\Resources\Pacientes\Schemas\PacienteInfolist;
 use App\Filament\Resources\Pacientes\Tables\PacientesTable;
 use App\Filament\Widgets\AvisoAlergias;
 use App\Models\Paciente;
 use BackedEnum;
+use Filament\Resources\RelationManagers\RelationGroup;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -78,6 +84,13 @@ class PacienteResource extends Resource
             NotasEvolucionRelationManager::class,
             InmunoterapiasRelationManager::class,
             PruebasCutaneasRelationManager::class,
+            CuestionariosActRelationManager::class,
+            AdjuntosRelationManager::class,
+            RelationGroup::make('Recetas y consentimientos', [
+                RecetasRelationManager::class,
+                ConsentimientosRelationManager::class,
+                DocumentosEmitidosRelationManager::class,
+            ])->icon(Heroicon::OutlinedDocumentText),
         ];
     }
 

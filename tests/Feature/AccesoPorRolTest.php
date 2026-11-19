@@ -2,21 +2,28 @@
 
 namespace Tests\Feature;
 
+use App\Models\Adjunto;
 use App\Models\Alergeno;
 use App\Models\Alergia;
 use App\Models\Aplicacion;
 use App\Models\Cita;
+use App\Models\Consentimiento;
+use App\Models\CuestionarioAct;
 use App\Models\Diagnostico;
+use App\Models\DocumentoEmitido;
 use App\Models\Frasco;
 use App\Models\HistoriaClinica;
 use App\Models\Inmunoterapia;
 use App\Models\NotaEvolucion;
 use App\Models\Paciente;
+use App\Models\Preconsulta;
 use App\Models\PruebaCutanea;
 use App\Models\ReaccionSistemica;
+use App\Models\Receta;
 use App\Models\ReglaAtraso;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -103,6 +110,19 @@ class AccesoPorRolTest extends TestCase
             'citas: crear' => [Cita::class, 'create', true, true],
             'citas: editar' => [Cita::class, 'update', true, true],
             'citas: borrar' => [Cita::class, 'delete', false, false],
+            'estudios: ver' => [Adjunto::class, 'viewAny', true, false],
+            'estudios: subir' => [Adjunto::class, 'create', true, false],
+            'estudios: borrar' => [Adjunto::class, 'delete', false, false],
+            'ACT: registrar' => [CuestionarioAct::class, 'create', true, false],
+            'consentimiento: generar' => [Consentimiento::class, 'create', true, false],
+            'consentimiento: modificar' => [Consentimiento::class, 'update', false, false],
+            'consentimiento: registrar firma' => [Consentimiento::class, 'firmar', true, false],
+            'recetas: crear' => [Receta::class, 'create', true, false],
+            'recetas: borrar' => [Receta::class, 'delete', false, false],
+            'documentos emitidos: ver' => [DocumentoEmitido::class, 'viewAny', true, false],
+            'documentos emitidos: crear a mano' => [DocumentoEmitido::class, 'create', false, false],
+            'pre-consulta: preparar tablet' => [Preconsulta::class, 'create', true, true],
+            'pre-consulta: ver respuestas' => [Preconsulta::class, 'viewAny', true, false],
         ];
     }
 
@@ -112,6 +132,9 @@ class AccesoPorRolTest extends TestCase
     #[DataProvider('matrizDePermisos')]
     public function test_matriz_de_permisos_por_rol(string $modelo, string $habilidad, bool $doctora, bool $recepcion): void
     {
+        // La factory de estudios escribe un archivo: que vaya a un disco temporal.
+        Storage::fake(Adjunto::DISCO);
+
         $necesitaRegistro = ! in_array($habilidad, ['viewAny', 'create'], true);
         $argumento = $necesitaRegistro ? $modelo::factory()->make() : $modelo;
 

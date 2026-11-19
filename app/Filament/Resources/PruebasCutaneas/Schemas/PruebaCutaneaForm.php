@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PruebasCutaneas\Schemas;
 
+use App\Enums\ProcedimientoConsentimiento;
 use App\Models\Alergeno;
 use App\Models\Paciente;
 use App\Models\PruebaCutanea;
@@ -11,7 +12,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -25,6 +28,13 @@ class PruebaCutaneaForm
     {
         return $schema
             ->components([
+                Callout::make('Falta el consentimiento informado firmado para el prick test')
+                    ->description('Genéralo en la ficha del paciente (Recetas y consentimientos), imprímelo y registra la firma.')
+                    ->warning()
+                    ->columnSpanFull()
+                    ->visible(fn (Get $get, string $operation): bool => $operation === 'create'
+                        && filled($paciente = Paciente::query()->find($get('paciente_id')))
+                        && ! $paciente->tieneConsentimientoFirmado(ProcedimientoConsentimiento::PrickTest)),
                 Section::make('Paciente y condiciones de la prueba')
                     ->columns(3)
                     ->columnSpanFull()
@@ -40,6 +50,7 @@ class PruebaCutaneaForm
                             ->searchable(['nombres', 'apellido_paterno', 'apellido_materno', 'ci'])
                             ->default(fn (): ?string => request()->query('paciente'))
                             ->required()
+                            ->live()
                             ->disabledOn('edit')
                             ->columnSpan(2),
                         DatePicker::make('fecha')

@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Widgets\AplicacionesDeHoy;
 use App\Filament\Widgets\CitasDeHoy;
 use App\Filament\Widgets\PacientesAtrasados;
+use App\Filament\Widgets\PreconsultasPorRevisar;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 /**
@@ -20,6 +21,7 @@ class Dashboard extends BaseDashboard
     {
         return [
             CitasDeHoy::class,
+            PreconsultasPorRevisar::class,
             AplicacionesDeHoy::class,
             PacientesAtrasados::class,
         ];

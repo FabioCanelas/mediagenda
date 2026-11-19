@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\Pacientes\Pages;
 
 use App\Filament\Resources\HistoriasClinicas\HistoriaClinicaResource;
+use App\Filament\Resources\Pacientes\AccionesPreconsulta;
 use App\Filament\Resources\Pacientes\PacienteResource;
 use App\Filament\Resources\PruebasCutaneas\PruebaCutaneaResource;
 use App\Filament\Widgets\AvisoAlergias;
+use App\Filament\Widgets\EvolucionAct;
 use App\Models\HistoriaClinica;
 use App\Models\Paciente;
 use App\Models\PruebaCutanea;
@@ -38,6 +40,8 @@ class ViewPaciente extends ViewRecord
                 ->color('gray')
                 ->visible(fn (): bool => Gate::allows('create', PruebaCutanea::class))
                 ->url(fn (): string => PruebaCutaneaResource::getUrl('create', ['paciente' => $this->record->getKey()])),
+            AccionesPreconsulta::revisar(fn (Paciente $record): Paciente => $record),
+            AccionesPreconsulta::prepararTablet(fn (Paciente $record): Paciente => $record),
             EditAction::make()
                 ->color('gray'),
         ];
@@ -48,5 +52,13 @@ class ViewPaciente extends ViewRecord
         return [
             AvisoAlergias::class,
         ];
+    }
+
+    /**
+     * El gráfico del ACT aparece cuando el paciente tiene al menos un cuestionario.
+     */
+    protected function getFooterWidgets(): array
+    {
+        return $this->record->cuestionariosAct()->exists() ? [EvolucionAct::class] : [];
     }
 }

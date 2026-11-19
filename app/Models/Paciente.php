@@ -4,6 +4,9 @@ namespace App\Models;
 
 use App\Enums\Departamento;
 use App\Enums\EstadoAlergia;
+use App\Enums\EstadoConsentimiento;
+use App\Enums\EstadoPreconsulta;
+use App\Enums\ProcedimientoConsentimiento;
 use App\Enums\Sexo;
 use App\Models\Concerns\RegistraAutor;
 use Database\Factories\PacienteFactory;
@@ -140,5 +143,72 @@ class Paciente extends Model
     public function esMenorDeEdad(): bool
     {
         return $this->edad !== null && $this->edad < self::EDAD_MAYORIA;
+    }
+
+    /**
+     * @return HasMany<Adjunto, $this>
+     */
+    public function adjuntos(): HasMany
+    {
+        return $this->hasMany(Adjunto::class);
+    }
+
+    /**
+     * @return HasMany<CuestionarioAct, $this>
+     */
+    public function cuestionariosAct(): HasMany
+    {
+        return $this->hasMany(CuestionarioAct::class);
+    }
+
+    /**
+     * @return HasMany<Consentimiento, $this>
+     */
+    public function consentimientos(): HasMany
+    {
+        return $this->hasMany(Consentimiento::class);
+    }
+
+    /**
+     * @return HasMany<Receta, $this>
+     */
+    public function recetas(): HasMany
+    {
+        return $this->hasMany(Receta::class);
+    }
+
+    /**
+     * @return HasMany<DocumentoEmitido, $this>
+     */
+    public function documentosEmitidos(): HasMany
+    {
+        return $this->hasMany(DocumentoEmitido::class);
+    }
+
+    /**
+     * @return HasMany<Preconsulta, $this>
+     */
+    public function preconsultas(): HasMany
+    {
+        return $this->hasMany(Preconsulta::class);
+    }
+
+    public function tieneConsentimientoFirmado(ProcedimientoConsentimiento $procedimiento): bool
+    {
+        return $this->consentimientos()
+            ->where('procedimiento', $procedimiento)
+            ->where('estado', EstadoConsentimiento::Firmado)
+            ->exists();
+    }
+
+    /**
+     * La pre-consulta más reciente que el paciente envió y la doctora aún no revisó.
+     */
+    public function preconsultaPorRevisar(): ?Preconsulta
+    {
+        return $this->preconsultas()
+            ->where('estado', EstadoPreconsulta::Enviada)
+            ->latest('enviada_en')
+            ->first();
     }
 }

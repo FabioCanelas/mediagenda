@@ -268,20 +268,141 @@ erDiagram
 - `v_proxima_aplicacion`: por cada inmunoterapia activa y subcutánea, la última aplicación y la fecha prevista de la siguiente (intervalo del paso o del mantenimiento).
 - `v_pacientes_atrasados`: las de `v_proxima_aplicacion` cuya fecha prevista ya pasó, con los días de atraso (`DATEDIFF`).
 
+## Sprint 3 · Estudios, ACT, documentos y pre-consulta
+
+Los archivos (estudios y PDF emitidos) viven en el disco privado `storage/app/private`; la base guarda su ruta y su huella SHA-256.
+
+```mermaid
+erDiagram
+    pacientes ||--o{ adjuntos : "tiene"
+    pacientes ||--o{ cuestionarios_act : "responde"
+    pacientes ||--o{ consentimientos : "firma"
+    pacientes ||--o{ recetas : "recibe"
+    recetas ||--|{ receta_medicamentos : "indica"
+    pacientes ||--o{ documentos_emitidos : "recibe"
+    recetas |o--o| documentos_emitidos : "se emite en"
+    consentimientos |o--o| documentos_emitidos : "se emite en"
+    users |o--o{ documentos_emitidos : "emite"
+    pacientes ||--o{ preconsultas : "llena"
+    citas |o--o{ preconsultas : "antes de"
+    users |o--o{ preconsultas : "revisa"
+
+    pacientes {
+        char36 id PK
+    }
+
+    users {
+        bigint id PK
+    }
+
+    citas {
+        char36 id PK
+    }
+
+    adjuntos {
+        char36 id PK
+        char36 paciente_id FK
+        varchar tipo "CHECK laboratorio, espirometria, imagen, otro"
+        date fecha_estudio
+        varchar descripcion
+        varchar archivo "trigger: no se reemplaza"
+        varchar nombre_original
+        varchar mime "CHECK pdf, jpeg o png"
+        int tamano_bytes "CHECK hasta 10 MB"
+        char64 sha256 "CHECK 64 hexadecimales"
+    }
+
+    cuestionarios_act {
+        char36 id PK
+        char36 paciente_id FK
+        date fecha
+        tinyint respuesta_1 "CHECK 1 a 5"
+        tinyint respuesta_2 "CHECK 1 a 5"
+        tinyint respuesta_3 "CHECK 1 a 5"
+        tinyint respuesta_4 "CHECK 1 a 5"
+        tinyint respuesta_5 "CHECK 1 a 5"
+        tinyint puntaje "GENERATED: suma de las 5"
+    }
+
+    consentimientos {
+        char36 id PK
+        char36 paciente_id FK
+        varchar procedimiento "CHECK prick_test o inmunoterapia"
+        date fecha
+        varchar lugar
+        varchar firmante_nombre
+        tinyint firmante_es_tutor
+        varchar estado "CHECK pendiente o firmado"
+        timestamp firmado_en "CHECK obligatorio si firmado"
+    }
+
+    recetas {
+        char36 id PK
+        char36 paciente_id FK
+        date fecha
+        text indicaciones "trigger: fija al emitirse"
+    }
+
+    receta_medicamentos {
+        bigint id PK
+        char36 receta_id FK, UK
+        smallint orden UK "CHECK desde 1"
+        varchar medicamento
+        varchar presentacion
+        varchar dosis
+        varchar duracion
+    }
+
+    documentos_emitidos {
+        char36 id PK
+        varchar tipo "CHECK receta o consentimiento"
+        varchar folio UK "CHECK R-2026-000001"
+        char36 paciente_id FK "trigger: igual al del origen"
+        char36 receta_id FK, UK "CHECK uno de los dos"
+        char36 consentimiento_id FK, UK
+        varchar archivo
+        char64 sha256
+        bigint emitido_por FK
+        timestamp emitido_en "sin UPDATE ni DELETE"
+    }
+
+    preconsultas {
+        char36 id PK
+        char36 paciente_id FK
+        char36 cita_id FK
+        char64 token_hash UK "nunca el token en claro"
+        datetime expira_en "trigger: no se envia vencida"
+        varchar estado "CHECK pendiente a descartada"
+        text motivo_consulta "CHECK obligatorio al enviar"
+        json sintomas
+        varchar alergia_medicamentos "CHECK si, no, no_se"
+        varchar celular
+        datetime enviada_en
+        datetime revisada_en "CHECK obligatorio al revisar"
+        bigint revisada_por FK
+    }
+```
+
 ## Seguridad en la base
 
 | Objeto | Qué hace |
 |---|---|
 | Usuario `mediagenda_migrador` | Crea y modifica la estructura. No puede dar permisos. |
-| Usuario `mediagenda_app` | `SELECT`, `INSERT`, `UPDATE` en las tablas clínicas; **sin `DELETE`** ni cambios de estructura. Solo `SELECT` en `cie10`, `auditoria` y las vistas. En los anexos solo `SELECT` e `INSERT`. Entre las tablas clínicas solo puede borrar filas de `esquema_dosis` e `inmunoterapia_alergeno`, protegidas por las llaves foráneas y auditadas (las tablas internas de Laravel, como `sessions` y `cache`, sí admiten `DELETE`). |
-| 54 triggers `trg_<tabla>_auditoria_*` | Copian cada `INSERT`, `UPDATE` y `DELETE` de 18 tablas a `auditoria`, con el usuario de `@app_usuario_id`. |
+| Usuario `mediagenda_app` | `SELECT`, `INSERT`, `UPDATE` en las tablas clínicas; **sin `DELETE`** ni cambios de estructura. Solo `SELECT` en `cie10`, `auditoria` y las vistas. En los anexos de notas y en `documentos_emitidos` solo `SELECT` e `INSERT`. Entre las tablas clínicas solo puede borrar filas de `esquema_dosis`, `inmunoterapia_alergeno` y `receta_medicamentos`, protegidas por llaves foráneas o triggers y auditadas (las tablas internas de Laravel, como `sessions` y `cache`, sí admiten `DELETE`). |
+| 75 triggers `trg_<tabla>_auditoria_*` | Copian cada `INSERT`, `UPDATE` y `DELETE` de 25 tablas a `auditoria`, con el usuario de `@app_usuario_id`. En `preconsultas` no copian `token_hash`. |
 | `trg_auditoria_sin_cambios` y `trg_auditoria_sin_borrado` | Impiden modificar o borrar la auditoría, incluso al migrador. |
 | `trg_notas_evolucion_bloqueo_update` y `_delete` | Una nota cerrada no se modifica ni se borra. |
 | `trg_anexos_solo_nota_cerrada` | Los anexos solo se agregan a notas cerradas. |
 | `trg_aplicaciones_validar_frasco` | Rechaza frascos vencidos, dados de baja o de otro tratamiento. |
 | `trg_citas_sin_choque_insert` y `_update` | Rechazan citas vigentes que se cruzan con otra. |
-| 65 restricciones `CHECK` | Repiten en la base las reglas del formulario (rangos, listas de valores, formato del CI, color del frasco según la dilución). |
+| `trg_adjuntos_archivo_inmutable` | El archivo de un estudio no se reemplaza; solo se corrigen sus datos. |
+| `trg_consentimientos_solo_firma` | Un consentimiento emitido solo admite registrar la firma, y no vuelve a quedar pendiente. |
+| `trg_recetas_bloqueo_emitida` y `trg_receta_medicamentos_bloqueo_*` | Una receta emitida no se modifica, ni sus medicamentos. |
+| `trg_documentos_emitidos_validar`, `_sin_cambios` y `_sin_borrado` | El documento es del mismo paciente que su origen, y no se modifica ni se borra, ni siquiera desde phpMyAdmin. |
+| `trg_preconsultas_flujo` | Un enlace vencido no se envía y una pre-consulta revisada ya no cambia. |
+| Columna generada `cuestionarios_act.puntaje` | La base calcula el puntaje del ACT; si alguien lo escribe a mano, lo ignora. |
+| 88 restricciones `CHECK` | Repiten en la base las reglas del formulario (rangos, listas de valores, formato del CI, color del frasco según la dilución, tipo de archivo, folio y huella SHA-256). |
 
-El script `database/sql/03_verificar_reglas_sprint_2.sql` prueba estas reglas con el usuario de la aplicación.
+Los scripts `database/sql/03_verificar_reglas_sprint_2.sql` y `04_verificar_reglas_sprint_3.sql` prueban estas reglas con el usuario de la aplicación.
 
 La tabla `auditoria` no tiene llave foránea hacia `users` a propósito: la bitácora no debe depender de que el usuario siga existiendo. Los scripts de usuarios y permisos están en `database/sql/`.

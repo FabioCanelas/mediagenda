@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\HistoriasClinicas\Pages;
 
 use App\Filament\Resources\HistoriasClinicas\HistoriaClinicaResource;
+use App\Filament\Resources\Pacientes\AccionesPreconsulta;
 use App\Filament\Resources\Pacientes\PacienteResource;
 use App\Filament\Widgets\AvisoAlergias;
 use App\Models\HistoriaClinica;
+use App\Models\Paciente;
 use App\Models\RegistroAuditoria;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -22,6 +24,7 @@ class EditHistoriaClinica extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            AccionesPreconsulta::revisar(fn (HistoriaClinica $record): Paciente => $record->paciente),
             self::accionHistorialCambios(),
             Action::make('verPaciente')
                 ->label('Ficha del paciente')

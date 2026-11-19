@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Inmunoterapias\RelationManagers;
 use App\Enums\Brazo;
 use App\Enums\FaseInmunoterapia;
 use App\Enums\GradoWao;
+use App\Enums\ProcedimientoConsentimiento;
 use App\Enums\ReaccionLocal;
 use App\Enums\TipoCita;
 use App\Filament\Resources\Citas\CitaResource;
@@ -189,6 +190,10 @@ class AplicacionesRelationManager extends RelationManager
                 ->description($reaccion ? "{$reaccion->resumen()}." : null)
                 ->danger()
                 ->visible($reaccion !== null),
+            Callout::make('Falta el consentimiento informado firmado')
+                ->description('Antes de la primera aplicación, genera el consentimiento en la ficha del paciente (Recetas y consentimientos), imprímelo y registra la firma.')
+                ->warning()
+                ->visible(! $inmunoterapia->paciente->tieneConsentimientoFirmado(ProcedimientoConsentimiento::Inmunoterapia)),
             Callout::make('Dosis según el esquema')
                 ->description($esperada['descripcion'] ?? 'El esquema de inicio está completo. Cambia la fase a mantenimiento para continuar.')
                 ->info(),

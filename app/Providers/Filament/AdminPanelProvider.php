@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Preconsulta\FormularioPreconsulta;
 use App\Http\Middleware\EstablecerUsuarioAuditoria;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
@@ -18,6 +19,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -62,6 +64,12 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            // HU-05: formulario público de la tablet. No pide usuario: lo abre un
+            // enlace de un solo uso, con límite de intentos por minuto.
+            ->routes(fn () => Route::get('/preconsulta/{token}', FormularioPreconsulta::class)
+                ->where('token', '[A-Za-z0-9]{48}')
+                ->middleware('throttle:30,1')
+                ->name('preconsulta'))
             ->authMiddleware([
                 Authenticate::class,
             ])

@@ -4,7 +4,10 @@ namespace App\Filament\Resources\Citas\Tables;
 
 use App\Enums\EstadoCita;
 use App\Enums\TipoCita;
+use App\Filament\Resources\Pacientes\AccionesPreconsulta;
 use App\Models\Cita;
+use App\Models\Paciente;
+use App\Models\Preconsulta;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -17,6 +20,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 
 class CitasTable
 {
@@ -71,6 +75,8 @@ class CitasTable
             ])
             ->recordActions([
                 ActionGroup::make([
+                    AccionesPreconsulta::prepararTablet(fn (Cita $record): Paciente => $record->paciente, fn (Cita $record): Cita => $record)
+                        ->visible(fn (Cita $record): bool => $record->estaVigente() && Gate::allows('create', Preconsulta::class)),
                     self::cambiarEstado('confirmar', 'Confirmar', EstadoCita::Confirmada, Heroicon::OutlinedCheck, [EstadoCita::Programada]),
                     self::cambiarEstado('atendida', 'Marcar atendida', EstadoCita::Atendida, Heroicon::OutlinedCheckBadge, [EstadoCita::Programada, EstadoCita::Confirmada]),
                     self::cambiarEstado('noAsistio', 'No asistió', EstadoCita::NoAsistio, Heroicon::OutlinedUserMinus, [EstadoCita::Programada, EstadoCita::Confirmada]),
