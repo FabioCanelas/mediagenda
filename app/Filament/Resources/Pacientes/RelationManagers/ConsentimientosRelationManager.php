@@ -100,7 +100,9 @@ class ConsentimientosRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Generar consentimiento')
                     ->icon(Heroicon::OutlinedDocumentCheck)
+                    ->modalHeading('Generar consentimiento informado')
                     ->modalSubmitActionLabel('Generar PDF')
+                    ->createAnother(false)
                     ->fillForm(fn (): array => Consentimiento::valoresIniciales($this->getOwnerRecord()))
                     ->using(fn (array $data): Consentimiento => DB::transaction(function () use ($data): Consentimiento {
                         $consentimiento = $this->getOwnerRecord()->consentimientos()->create($data);

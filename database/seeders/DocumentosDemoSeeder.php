@@ -97,7 +97,7 @@ class DocumentosDemoSeeder extends Seeder
             $receta = Receta::factory()->for($paciente)->create(['fecha' => now()->subDays(10 - $indice)->toDateString()]);
 
             foreach (range(1, 2) as $orden) {
-                RecetaMedicamento::factory()->for($receta)->create(['orden' => $orden]);
+                RecetaMedicamento::factory()->for($receta)->numero($indice + $orden)->create(['orden' => $orden]);
             }
 
             if ($indice < 2) {

@@ -28,7 +28,7 @@ class RecetaFactory extends Factory
     {
         return $this->afterCreating(function (Receta $receta) use ($cantidad): void {
             foreach (range(1, $cantidad) as $orden) {
-                RecetaMedicamento::factory()->for($receta)->create(['orden' => $orden]);
+                RecetaMedicamento::factory()->for($receta)->numero($orden)->create(['orden' => $orden]);
             }
         });
     }

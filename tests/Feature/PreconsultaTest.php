@@ -64,12 +64,23 @@ class PreconsultaTest extends TestCase
             ->assertActionVisible('prepararTablet')
             ->assertActionHidden('revisarPreconsulta')
             ->mountAction('prepararTablet')
-            ->assertActionMounted('prepararTablet');
+            ->assertActionMounted('prepararTablet')
+            ->assertActionDataSet(['vence' => 'hoy a las 12:00']);
 
         $preconsulta = $this->paciente->preconsultas()->sole();
 
         $this->assertSame(EstadoPreconsulta::Pendiente, $preconsulta->estado);
         $this->assertSame('70000001', $preconsulta->celular);
+    }
+
+    public function test_si_el_enlace_vence_despues_de_medianoche_dice_manana(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-23 22:40'));
+        $this->actingAs(User::factory()->recepcion()->create());
+
+        Livewire::test(ViewPaciente::class, ['record' => $this->paciente->getRouteKey()])
+            ->mountAction('prepararTablet')
+            ->assertActionDataSet(['vence' => 'mañana a las 01:40']);
     }
 
     public function test_el_paciente_abre_el_formulario_sin_iniciar_sesion(): void
@@ -201,6 +212,21 @@ class PreconsultaTest extends TestCase
             "Padre con rinitis.\n\nPre-consulta del 23/11/2026: Madre con asma.",
             $this->paciente->historiaClinica()->sole()->antecedentes_heredofamiliares,
         );
+    }
+
+    public function test_la_propuesta_no_repite_puntos_y_pone_los_sintomas_en_minuscula(): void
+    {
+        $preconsulta = Preconsulta::factory()->for($this->paciente)->enviada()->create([
+            'motivo_consulta' => 'Tos en las noches.',
+            'medicamentos_actuales' => 'Loratadina cuando tiene síntomas.',
+            'sintomas' => ['pecho'],
+        ]);
+
+        $propuesta = $preconsulta->propuestaParaHistoria();
+
+        $this->assertSame('Tos en las noches. Desde: Hace 2 años. Síntomas referidos: tos, silbido en el pecho o falta de aire.', $propuesta['padecimiento_actual']);
+        $this->assertStringContainsString('Medicamentos actuales: Loratadina cuando tiene síntomas.', $propuesta['antecedentes_personales_patologicos']);
+        $this->assertStringNotContainsString('..', implode(' ', array_filter($propuesta)));
     }
 
     public function test_la_doctora_puede_descartarla(): void

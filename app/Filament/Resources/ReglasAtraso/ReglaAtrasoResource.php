@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ReglasAtraso;
 
 use App\Enums\FaseInmunoterapia;
+use App\Filament\Resources\Concerns\TitulosEnEspanol;
 use App\Filament\Resources\ReglasAtraso\Pages\ManageReglasAtraso;
 use App\Models\ReglaAtraso;
 use BackedEnum;
@@ -17,7 +18,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
 use UnitEnum;
 
 /**
@@ -25,6 +25,8 @@ use UnitEnum;
  */
 class ReglaAtrasoResource extends Resource
 {
+    use TitulosEnEspanol;
+
     protected static ?string $model = ReglaAtraso::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
@@ -38,19 +40,6 @@ class ReglaAtrasoResource extends Resource
     protected static ?string $pluralModelLabel = 'reglas de atraso';
 
     protected static ?string $slug = 'reglas-atraso';
-
-    /**
-     * En español solo la primera palabra del título va con mayúscula.
-     */
-    public static function getTitleCaseModelLabel(): string
-    {
-        return Str::ucfirst(static::getModelLabel());
-    }
-
-    public static function getTitleCasePluralModelLabel(): string
-    {
-        return Str::ucfirst(static::getPluralModelLabel());
-    }
 
     public static function form(Schema $schema): Schema
     {

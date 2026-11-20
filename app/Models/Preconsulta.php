@@ -180,21 +180,21 @@ class Preconsulta extends Model
     public function propuestaParaHistoria(): array
     {
         $sintomas = collect($this->sintomas ?? [])
-            ->map(fn (string $clave): string => self::SINTOMAS[$clave] ?? $clave)
+            ->map(fn (string $clave): string => Str::lcfirst(self::SINTOMAS[$clave] ?? $clave))
             ->implode('; ');
 
         $patologicos = collect([
             match ($this->alergia_medicamentos) {
-                RespuestaSiNo::Si => 'Refiere alergia a medicamentos: '.($this->alergia_medicamentos_detalle ?: 'sin detalle').'.',
+                RespuestaSiNo::Si => self::oracion('Refiere alergia a medicamentos: '.($this->alergia_medicamentos_detalle ?: 'sin detalle')),
                 RespuestaSiNo::No => 'Niega alergia a medicamentos.',
                 default => 'No sabe si es alérgico a medicamentos.',
             },
-            filled($this->otras_alergias) ? "Otras alergias referidas: {$this->otras_alergias}." : null,
-            filled($this->medicamentos_actuales) ? "Medicamentos actuales: {$this->medicamentos_actuales}." : null,
+            filled($this->otras_alergias) ? self::oracion("Otras alergias referidas: {$this->otras_alergias}") : null,
+            filled($this->medicamentos_actuales) ? self::oracion("Medicamentos actuales: {$this->medicamentos_actuales}") : null,
         ])->filter()->implode(' ');
 
         $noPatologicos = collect([
-            filled($this->mascotas) ? "Mascotas: {$this->mascotas}." : 'Sin mascotas.',
+            filled($this->mascotas) ? self::oracion("Mascotas: {$this->mascotas}") : 'Sin mascotas.',
             match ($this->fuma) {
                 true => 'Tabaquismo positivo.',
                 false => 'Niega tabaquismo.',
@@ -203,11 +203,25 @@ class Preconsulta extends Model
         ])->filter()->implode(' ');
 
         return [
-            'padecimiento_actual' => trim("{$this->motivo_consulta} Desde: {$this->tiempo_evolucion}.".($sintomas !== '' ? " Síntomas referidos: {$sintomas}." : '')),
-            'antecedentes_heredofamiliares' => $this->antecedentes_familiares,
+            'padecimiento_actual' => collect([
+                self::oracion($this->motivo_consulta),
+                self::oracion("Desde: {$this->tiempo_evolucion}"),
+                $sintomas !== '' ? self::oracion("Síntomas referidos: {$sintomas}") : null,
+            ])->filter()->implode(' '),
+            'antecedentes_heredofamiliares' => filled($this->antecedentes_familiares) ? self::oracion($this->antecedentes_familiares) : null,
             'antecedentes_personales_patologicos' => $patologicos,
             'antecedentes_personales_no_patologicos' => $noPatologicos,
         ];
+    }
+
+    /**
+     * Cierra el texto con un solo punto, aunque el paciente ya haya puesto uno.
+     */
+    private static function oracion(?string $texto): string
+    {
+        $texto = rtrim(trim((string) $texto), " \t\n\r.");
+
+        return $texto === '' ? '' : "{$texto}.";
     }
 
     /**

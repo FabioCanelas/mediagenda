@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\HistoriasClinicas;
 
+use App\Filament\Resources\Concerns\TitulosEnEspanol;
 use App\Filament\Resources\HistoriasClinicas\Pages\CreateHistoriaClinica;
 use App\Filament\Resources\HistoriasClinicas\Pages\EditHistoriaClinica;
 use App\Filament\Resources\HistoriasClinicas\Pages\ListHistoriasClinicas;
@@ -21,6 +22,8 @@ use UnitEnum;
 
 class HistoriaClinicaResource extends Resource
 {
+    use TitulosEnEspanol;
+
     protected static ?string $model = HistoriaClinica::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;

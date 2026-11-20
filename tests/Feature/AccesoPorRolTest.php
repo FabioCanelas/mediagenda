@@ -34,6 +34,11 @@ class AccesoPorRolTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_la_raiz_del_sitio_lleva_al_panel(): void
+    {
+        $this->get('/')->assertRedirect('/panel');
+    }
+
     public function test_sin_sesion_redirige_al_login(): void
     {
         $this->get('/panel/pacientes')->assertRedirect('/panel/login');

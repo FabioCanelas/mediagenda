@@ -26,12 +26,31 @@ class RecetaMedicamentoFactory extends Factory
      */
     public function definition(): array
     {
-        [$medicamento, $presentacion, $dosis, $duracion] = fake()->randomElement(self::MEDICAMENTOS);
-
         return [
             'receta_id' => Receta::factory(),
             'orden' => 1,
-            'medicamento' => $medicamento,
+            ...self::datosDel(fake()->randomElement(self::MEDICAMENTOS)),
+        ];
+    }
+
+    /**
+     * Elige el medicamento por número, para que una receta no repita el mismo.
+     */
+    public function numero(int $numero): static
+    {
+        return $this->state(fn (array $attributes) => self::datosDel(self::MEDICAMENTOS[$numero % count(self::MEDICAMENTOS)]));
+    }
+
+    /**
+     * @param  array{string, string, string, string}  $medicamento
+     * @return array<string, string>
+     */
+    private static function datosDel(array $medicamento): array
+    {
+        [$nombre, $presentacion, $dosis, $duracion] = $medicamento;
+
+        return [
+            'medicamento' => $nombre,
             'presentacion' => $presentacion,
             'dosis' => $dosis,
             'duracion' => $duracion,

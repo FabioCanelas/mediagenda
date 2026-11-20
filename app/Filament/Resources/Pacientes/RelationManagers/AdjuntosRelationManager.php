@@ -110,6 +110,9 @@ class AdjuntosRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Adjuntar estudio')
+                    ->modalHeading('Adjuntar estudio')
+                    ->modalSubmitActionLabel('Guardar')
+                    ->createAnother(false)
                     ->icon(Heroicon::OutlinedPaperClip),
             ])
             ->recordActions([
@@ -119,7 +122,8 @@ class AdjuntosRelationManager extends RelationManager
                     ->authorize('view')
                     ->action(fn (Adjunto $record): ?StreamedResponse => $this->descargar($record)),
                 EditAction::make()
-                    ->label('Corregir datos'),
+                    ->label('Corregir datos')
+                    ->modalHeading('Corregir datos del estudio'),
             ]);
     }
 

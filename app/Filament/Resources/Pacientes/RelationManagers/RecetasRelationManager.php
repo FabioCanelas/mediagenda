@@ -128,6 +128,9 @@ class RecetasRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Nueva receta')
+                    ->modalHeading('Nueva receta')
+                    ->modalSubmitActionLabel('Guardar borrador')
+                    ->createAnother(false)
                     ->icon(Heroicon::OutlinedPlus),
             ])
             ->recordActions([
@@ -141,8 +144,10 @@ class RecetasRelationManager extends RelationManager
                     ->modalSubmitActionLabel('Emitir y descargar')
                     ->action(fn (Receta $record): ?StreamedResponse => $this->emitir($record)),
                 $this->accionDescargarPdf(fn (Receta $record) => $record->documento),
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->modalHeading('Receta'),
+                EditAction::make()
+                    ->modalHeading('Corregir receta'),
             ]);
     }
 

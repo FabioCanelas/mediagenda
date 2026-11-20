@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PruebasCutaneas;
 
+use App\Filament\Resources\Concerns\TitulosEnEspanol;
 use App\Filament\Resources\PruebasCutaneas\Pages\CreatePruebaCutanea;
 use App\Filament\Resources\PruebasCutaneas\Pages\EditPruebaCutanea;
 use App\Filament\Resources\PruebasCutaneas\Pages\ListPruebasCutaneas;
@@ -23,6 +24,8 @@ use UnitEnum;
 
 class PruebaCutaneaResource extends Resource
 {
+    use TitulosEnEspanol;
+
     protected static ?string $model = PruebaCutanea::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBeaker;

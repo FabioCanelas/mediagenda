@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\NotasEvolucion;
 
+use App\Filament\Resources\Concerns\TitulosEnEspanol;
 use App\Filament\Resources\NotasEvolucion\Pages\CreateNotaEvolucion;
 use App\Filament\Resources\NotasEvolucion\Pages\EditNotaEvolucion;
 use App\Filament\Resources\NotasEvolucion\Pages\ListNotasEvolucion;
@@ -17,11 +18,12 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 use UnitEnum;
 
 class NotaEvolucionResource extends Resource
 {
+    use TitulosEnEspanol;
+
     protected static ?string $model = NotaEvolucion::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
@@ -37,19 +39,6 @@ class NotaEvolucionResource extends Resource
     protected static ?string $pluralModelLabel = 'notas de evolución';
 
     protected static ?string $slug = 'notas-evolucion';
-
-    /**
-     * En español solo la primera palabra del título va con mayúscula.
-     */
-    public static function getTitleCaseModelLabel(): string
-    {
-        return Str::ucfirst(static::getModelLabel());
-    }
-
-    public static function getTitleCasePluralModelLabel(): string
-    {
-        return Str::ucfirst(static::getPluralModelLabel());
-    }
 
     public static function form(Schema $schema): Schema
     {

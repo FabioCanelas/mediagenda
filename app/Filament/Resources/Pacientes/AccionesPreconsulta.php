@@ -49,16 +49,22 @@ class AccionesPreconsulta
             ->fillForm(function (Model $record) use ($pacienteDe, $citaDe): array {
                 ['preconsulta' => $preconsulta, 'token' => $token] = Preconsulta::preparar($pacienteDe($record), $citaDe ? $citaDe($record) : null);
 
+                $vence = $preconsulta->expira_en;
+
                 return [
                     'enlace' => Preconsulta::enlace($token),
-                    'vence' => $preconsulta->expira_en->format('H:i'),
+                    'vence' => match (true) {
+                        $vence->isToday() => 'hoy a las '.$vence->format('H:i'),
+                        $vence->isTomorrow() => 'mañana a las '.$vence->format('H:i'),
+                        default => 'el '.$vence->format('d/m \a \l\a\s H:i'),
+                    },
                 ];
             })
             ->schema([
                 ViewField::make('enlace')
                     ->hiddenLabel()
                     ->view('filament.preconsulta.codigo-qr'),
-                Text::make(fn (Get $get): string => "El enlace vence hoy a las {$get('vence')}. Si se genera otro, este deja de servir.")
+                Text::make(fn (Get $get): string => "El enlace vence {$get('vence')}. Si se genera otro, este deja de servir.")
                     ->color('gray'),
             ])
             ->modalSubmitAction(false)
@@ -149,6 +155,8 @@ class AccionesPreconsulta
                 ]),
             Section::make('Otros datos')
                 ->compact()
+                ->visible($preconsulta->alergia_medicamentos === RespuestaSiNo::Si
+                    || (filled($preconsulta->celular) && $preconsulta->celular !== $paciente->celular))
                 ->components([
                     Toggle::make('registrar_alergia')
                         ->label('Registrar la alergia a medicamento como sospechada')

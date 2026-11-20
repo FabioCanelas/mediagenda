@@ -40,7 +40,7 @@ class CuestionariosActRelationManager extends RelationManager
     {
         $preguntas = collect(CuestionarioAct::PREGUNTAS)->map(fn (array $pregunta, int $numero): Radio => Radio::make("respuesta_{$numero}")
             ->label("{$numero}. {$pregunta['titulo']}")
-            ->helperText($pregunta['pregunta'])
+            ->belowLabel($pregunta['pregunta'])
             ->options(collect($pregunta['opciones'])->mapWithKeys(fn (string $opcion, int $puntos): array => [$puntos => "{$opcion} ({$puntos})"])->all())
             ->inline()
             ->required()
@@ -92,10 +92,14 @@ class CuestionariosActRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Registrar ACT')
+                    ->modalHeading('Registrar cuestionario ACT')
+                    ->modalSubmitActionLabel('Guardar')
+                    ->createAnother(false)
                     ->icon(Heroicon::OutlinedClipboardDocumentCheck),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->modalHeading('Corregir cuestionario ACT'),
             ]);
     }
 
