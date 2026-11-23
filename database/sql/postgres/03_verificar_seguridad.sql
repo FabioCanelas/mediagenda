@@ -119,10 +119,13 @@ SELECT pg_temp.probar('Auditoría', 'Un cambio en pacientes deja su registro', '
     $a$$q$, 'permitido');
 
 -- 5. Configuración del servidor.
+-- Desde aquí solo se ve el tramo interno entre el pooler de Supabase y la base,
+-- que no usa TLS. El tramo que cruza internet (aplicación → pooler) se prueba
+-- desde afuera con: php artisan base:probar-tls
 INSERT INTO resultados (control, prueba, rol, esperado, obtenido, ok)
-SELECT 'Servidor', 'Esta conexión va cifrada con TLS', current_user, 'sí',
-       CASE WHEN ssl THEN 'sí' ELSE 'no' END, ssl
-  FROM pg_stat_ssl WHERE pid = pg_backend_pid();
+SELECT 'Servidor', 'El servidor tiene TLS activo (ver base:probar-tls)', '—', 'sí',
+       CASE WHEN current_setting('ssl') = 'on' THEN 'sí' ELSE 'no' END,
+       current_setting('ssl') = 'on';
 
 INSERT INTO resultados (control, prueba, rol, esperado, obtenido, ok)
 SELECT 'Servidor', 'Tablas del esquema sin seguridad por filas (RLS)', '—', '0',

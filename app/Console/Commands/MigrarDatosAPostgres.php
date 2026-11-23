@@ -119,7 +119,8 @@ class MigrarDatosAPostgres extends Command
     private function tablasEnOrden(Connection $destino): array
     {
         $esquema = $destino->getSchemaBuilder();
-        $tablas = array_values(array_diff($esquema->getTableListing(schemaQualified: false), self::OMITIR));
+        // Solo el esquema de MediAgenda: Supabase tiene sus propias tablas en auth, storage, etc.
+        $tablas = array_values(array_diff($esquema->getTableListing($esquema->getCurrentSchemaName(), schemaQualified: false), self::OMITIR));
         $dependencias = [];
 
         foreach ($tablas as $tabla) {

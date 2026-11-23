@@ -9,7 +9,22 @@ use Pdo\Mysql;
  * Tres usuarios, cada uno con lo mínimo: la aplicación, el migrador (dueño de las
  * tablas) y el administrador de Supabase (solo para crear roles y el esquema).
  * TLS obligatorio por defecto y hora de Bolivia, igual que el servidor local.
+ *
+ * Con PG_SSLMODE=verify-full, PG_SSLROOTCERT apunta al certificado raíz de Supabase
+ * para comprobar también que el servidor sea el verdadero. Una ruta relativa se toma
+ * desde la raíz del proyecto, porque las peticiones web corren desde public/.
  */
+$certificadoPostgres = env('PG_SSLROOTCERT');
+
+if (is_string($certificadoPostgres) && $certificadoPostgres !== '' && ! preg_match('#^([a-zA-Z]:)?[\\\\/]#', $certificadoPostgres)) {
+    $certificadoPostgres = base_path($certificadoPostgres);
+}
+
+if (is_string($certificadoPostgres)) {
+    // libpq toma la barra invertida de Windows como escape; la barra normal sirve en ambos sistemas.
+    $certificadoPostgres = str_replace('\\', '/', $certificadoPostgres);
+}
+
 $postgres = fn (string $usuario, string $clave): array => [
     'driver' => 'pgsql',
     'url' => env('PG_URL'),
@@ -23,7 +38,7 @@ $postgres = fn (string $usuario, string $clave): array => [
     'prefix_indexes' => true,
     'search_path' => env('PG_SCHEMA', 'mediagenda'),
     'sslmode' => env('PG_SSLMODE', 'require'),
-    'sslrootcert' => env('PG_SSLROOTCERT'),
+    'sslrootcert' => $certificadoPostgres,
     'timezone' => env('PG_TIMEZONE', 'America/La_Paz'),
     'application_name' => 'mediagenda',
 ];
