@@ -60,6 +60,25 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Supabase Storage (compatible con S3). El bucket es PRIVADO: los estudios y los
+         * PDF nunca tienen un enlace público; la aplicación los entrega solo a quien
+         * tiene permiso, después de comprobar su huella SHA-256.
+         * En Render el disco del servidor se borra al reiniciar, por eso van aquí.
+         */
+        'supabase' => [
+            'driver' => 's3',
+            'key' => env('SUPABASE_S3_KEY'),
+            'secret' => env('SUPABASE_S3_SECRET'),
+            'region' => env('SUPABASE_S3_REGION', 'us-east-1'),
+            'bucket' => env('SUPABASE_S3_BUCKET', 'mediagenda'),
+            'endpoint' => env('SUPABASE_S3_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
+        ],
+
     ],
 
     /*

@@ -39,6 +39,22 @@ return [
     ],
 
     /*
+     * Disco privado para estudios y PDF emitidos: "local" en la computadora,
+     * "supabase" (Supabase Storage) en la web, donde el disco del servidor se borra.
+     */
+    'archivos' => [
+        'disco' => env('ARCHIVOS_DISCO', 'local'),
+    ],
+
+    /*
+     * Seguridad en producción. La verificación en dos pasos se vuelve obligatoria
+     * para todos los usuarios cuando MFA_OBLIGATORIO=true (así está en Render).
+     */
+    'seguridad' => [
+        'mfa_obligatorio' => (bool) env('MFA_OBLIGATORIO', false),
+    ],
+
+    /*
      * Usuarios de demostración que crea UsuariosSeeder. Las contraseñas viven
      * solo en el archivo .env, que no se sube al repositorio.
      */

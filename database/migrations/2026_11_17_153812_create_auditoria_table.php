@@ -2,6 +2,7 @@
 
 use App\Support\BaseDeDatos\Auditoria;
 use App\Support\BaseDeDatos\Restricciones;
+use App\Support\BaseDeDatos\TriggersPostgres;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -46,9 +47,15 @@ return new class extends Migration
             $table->index('realizado_en');
         });
 
-        if (Restricciones::soportado()) {
+        if (Restricciones::esMysql()) {
             DB::unprepared("CREATE TRIGGER `trg_auditoria_sin_cambios` BEFORE UPDATE ON `auditoria` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La auditoria no se puede modificar'");
             DB::unprepared("CREATE TRIGGER `trg_auditoria_sin_borrado` BEFORE DELETE ON `auditoria` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La auditoria no se puede borrar'");
+        }
+
+        if (Restricciones::esPostgres()) {
+            Auditoria::crearFuncionPostgres();
+            TriggersPostgres::antesDe('UPDATE', 'auditoria', 'trg_auditoria_sin_cambios', TriggersPostgres::error('La auditoria no se puede modificar'));
+            TriggersPostgres::antesDe('DELETE', 'auditoria', 'trg_auditoria_sin_borrado', TriggersPostgres::error('La auditoria no se puede borrar'));
         }
 
         foreach ($this->tablas as $tabla => $excluir) {
@@ -63,5 +70,9 @@ return new class extends Migration
         }
 
         Schema::dropIfExists('auditoria');
+
+        if (Restricciones::esPostgres()) {
+            DB::unprepared('DROP FUNCTION IF EXISTS "fn_auditoria"(), "fn_trg_auditoria_sin_cambios"(), "fn_trg_auditoria_sin_borrado"()');
+        }
     }
 };

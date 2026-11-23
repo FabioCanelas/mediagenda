@@ -122,7 +122,7 @@ class DocumentosDemoSeeder extends Seeder
             [$tipo, $descripcion, $resultado] = $estudios[$indice];
             $ruta = "adjuntos/{$paciente->getKey()}/".Str::uuid().'.pdf';
 
-            Storage::disk(Adjunto::DISCO)->put($ruta, Pdf::loadHTML(
+            Storage::disk(Adjunto::disco())->put($ruta, Pdf::loadHTML(
                 "<h2>{$descripcion}</h2><p>Paciente: {$paciente->nombre_completo}</p><p>{$resultado}</p><p><em>Estudio ficticio de demostración.</em></p>",
             )->output());
 

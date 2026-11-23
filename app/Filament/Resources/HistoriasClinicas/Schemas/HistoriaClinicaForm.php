@@ -110,8 +110,8 @@ class HistoriaClinicaForm
                                             ->getSearchResultsUsing(fn (string $search): array => Cie10::query()
                                                 ->where('activo', true)
                                                 ->where(fn (Builder $query) => $query
-                                                    ->where('codigo', 'like', "{$search}%")
-                                                    ->orWhere('descripcion', 'like', "%{$search}%"))
+                                                    ->whereLike('codigo', "{$search}%")
+                                                    ->orWhereLike('descripcion', "%{$search}%"))
                                                 ->orderBy('codigo')
                                                 ->limit(30)
                                                 ->get()

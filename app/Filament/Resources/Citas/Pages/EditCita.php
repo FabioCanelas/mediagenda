@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Citas\Pages;
 
 use App\Filament\Resources\Citas\CitaResource;
+use App\Support\BaseDeDatos\ErrorDeBase;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +23,7 @@ class EditCita extends EditRecord
         } catch (QueryException $error) {
             Notification::make()
                 ->title('No se pudo mover la cita')
-                ->body($error->errorInfo[2] ?? 'La base de datos rechazó el cambio.')
+                ->body(ErrorDeBase::mensaje($error, 'La base de datos rechazó el cambio.'))
                 ->danger()
                 ->send();
 

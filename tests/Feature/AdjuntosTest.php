@@ -29,7 +29,7 @@ class AdjuntosTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake(Adjunto::DISCO);
+        Storage::fake(Adjunto::disco());
         $this->actingAs(User::factory()->doctora()->create());
         $this->paciente = Paciente::factory()->create();
     }
@@ -54,7 +54,7 @@ class AdjuntosTest extends TestCase
         $this->assertSame('espirometria.pdf', $adjunto->nombre_original);
         $this->assertSame(hash('sha256', $contenido), $adjunto->sha256);
         $this->assertStringStartsWith("adjuntos/{$this->paciente->getKey()}/", $adjunto->archivo);
-        Storage::disk(Adjunto::DISCO)->assertExists($adjunto->archivo);
+        Storage::disk(Adjunto::disco())->assertExists($adjunto->archivo);
     }
 
     public function test_acepta_fotos_jpg_y_png(): void
@@ -95,7 +95,7 @@ class AdjuntosTest extends TestCase
     public function test_si_el_archivo_cambio_en_el_disco_no_lo_entrega(): void
     {
         $adjunto = Adjunto::factory()->for($this->paciente)->create();
-        Storage::disk(Adjunto::DISCO)->put($adjunto->archivo, 'contenido alterado');
+        Storage::disk(Adjunto::disco())->put($adjunto->archivo, 'contenido alterado');
 
         $this->assertFalse($adjunto->archivoIntegro());
 

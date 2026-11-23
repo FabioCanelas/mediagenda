@@ -138,7 +138,7 @@ class AccesoPorRolTest extends TestCase
     public function test_matriz_de_permisos_por_rol(string $modelo, string $habilidad, bool $doctora, bool $recepcion): void
     {
         // La factory de estudios escribe un archivo: que vaya a un disco temporal.
-        Storage::fake(Adjunto::DISCO);
+        Storage::fake(Adjunto::disco());
 
         $necesitaRegistro = ! in_array($habilidad, ['viewAny', 'create'], true);
         $argumento = $necesitaRegistro ? $modelo::factory()->make() : $modelo;

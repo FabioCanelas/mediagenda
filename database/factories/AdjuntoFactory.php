@@ -26,7 +26,7 @@ class AdjuntoFactory extends Factory
             'descripcion' => fake()->randomElement(['Hemograma e IgE total', 'Espirometría con broncodilatador', 'IgE específica a ácaros']),
             'archivo' => function (): string {
                 $ruta = 'adjuntos/demo/'.Str::uuid().'.pdf';
-                Storage::disk(Adjunto::DISCO)->put($ruta, "%PDF-1.4\n% Estudio ficticio de demostracion\n");
+                Storage::disk(Adjunto::disco())->put($ruta, "%PDF-1.4\n% Estudio ficticio de demostracion\n");
 
                 return $ruta;
             },

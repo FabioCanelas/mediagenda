@@ -14,6 +14,7 @@ use App\Models\EsquemaDosis;
 use App\Models\Frasco;
 use App\Models\Inmunoterapia;
 use App\Models\ReaccionSistemica;
+use App\Support\BaseDeDatos\ErrorDeBase;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
@@ -129,7 +130,7 @@ class AplicacionesRelationManager extends RelationManager
                 } catch (QueryException $error) {
                     Notification::make()
                         ->title('La base de datos rechazó la aplicación')
-                        ->body($error->errorInfo[2] ?? $error->getMessage())
+                        ->body(ErrorDeBase::mensaje($error))
                         ->danger()
                         ->send();
 

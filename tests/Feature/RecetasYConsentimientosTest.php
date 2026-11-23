@@ -42,7 +42,7 @@ class RecetasYConsentimientosTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake(DocumentoEmitido::DISCO);
+        Storage::fake(DocumentoEmitido::disco());
         $this->travelTo(CarbonImmutable::parse('2026-11-23 10:00'));
         $this->doctora = User::factory()->doctora()->create();
         $this->actingAs($this->doctora);
@@ -83,7 +83,7 @@ class RecetasYConsentimientosTest extends TestCase
             ->assertFileDownloaded('R-2026-000001.pdf');
 
         $documento = $receta->documento()->sole();
-        $contenido = Storage::disk(DocumentoEmitido::DISCO)->get($documento->archivo);
+        $contenido = Storage::disk(DocumentoEmitido::disco())->get($documento->archivo);
 
         $this->assertSame(TipoDocumento::Receta, $documento->tipo);
         $this->assertStringStartsWith('%PDF', $contenido);
@@ -148,7 +148,7 @@ class RecetasYConsentimientosTest extends TestCase
     public function test_la_reimpresion_avisa_si_la_copia_fue_alterada(): void
     {
         $documento = app(EmisorDeDocumentos::class)->emitirReceta(Receta::factory()->for($this->paciente)->conMedicamentos()->create());
-        Storage::disk(DocumentoEmitido::DISCO)->put($documento->archivo, '%PDF-1.4 alterado');
+        Storage::disk(DocumentoEmitido::disco())->put($documento->archivo, '%PDF-1.4 alterado');
 
         $this->gestor(DocumentosEmitidosRelationManager::class)
             ->callAction(TestAction::make('descargarPdf')->table($documento))
@@ -188,7 +188,7 @@ class RecetasYConsentimientosTest extends TestCase
         $this->assertSame($this->paciente->nombre_completo, $consentimiento->firmante_nombre);
         $this->assertSame(config('mediagenda.consultorio.ciudad'), $consentimiento->lugar);
         $this->assertSame('C-2026-000001', $consentimiento->documento->folio);
-        Storage::disk(DocumentoEmitido::DISCO)->assertExists($consentimiento->documento->archivo);
+        Storage::disk(DocumentoEmitido::disco())->assertExists($consentimiento->documento->archivo);
     }
 
     public function test_el_consentimiento_tiene_los_apartados_de_la_norma(): void

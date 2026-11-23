@@ -73,7 +73,7 @@ class EmisorDeDocumentos
                 ->setOption('isFontSubsettingEnabled', true)
                 ->output();
 
-            Storage::disk(DocumentoEmitido::DISCO)->put($ruta, $contenido);
+            Storage::disk(DocumentoEmitido::disco())->put($ruta, $contenido);
 
             try {
                 return DocumentoEmitido::query()->create([
@@ -88,7 +88,7 @@ class EmisorDeDocumentos
                     'emitido_en' => $emitidoEn,
                 ]);
             } catch (Throwable $error) {
-                Storage::disk(DocumentoEmitido::DISCO)->delete($ruta);
+                Storage::disk(DocumentoEmitido::disco())->delete($ruta);
 
                 throw $error;
             }

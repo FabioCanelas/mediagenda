@@ -29,10 +29,10 @@ class NotasEvolucionTable
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                         'paciente',
                         fn (Builder $paciente) => $paciente
-                            ->where('nombres', 'like', "%{$search}%")
-                            ->orWhere('apellido_paterno', 'like', "%{$search}%")
-                            ->orWhere('apellido_materno', 'like', "%{$search}%")
-                            ->orWhere('ci', 'like', "{$search}%"),
+                            ->whereLike('nombres', "%{$search}%")
+                            ->orWhereLike('apellido_paterno', "%{$search}%")
+                            ->orWhereLike('apellido_materno', "%{$search}%")
+                            ->orWhereLike('ci', "{$search}%"),
                     ))
                     ->weight('medium'),
                 TextColumn::make('evolucion')

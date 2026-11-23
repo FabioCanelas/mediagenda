@@ -23,14 +23,21 @@ class Adjunto extends Model
     /** @use HasFactory<AdjuntoFactory> */
     use HasFactory, HasUuids, RegistraAutor;
 
-    public const DISCO = 'local';
-
     public const TIPOS_DE_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png'];
+
+    /**
+     * Disco privado donde viven los archivos: local en la computadora y
+     * Supabase Storage en la web (ARCHIVOS_DISCO).
+     */
+    public static function disco(): string
+    {
+        return (string) config('mediagenda.archivos.disco', 'local');
+    }
 
     protected static function booted(): void
     {
         static::creating(function (Adjunto $adjunto): void {
-            $disco = Storage::disk(self::DISCO);
+            $disco = Storage::disk(self::disco());
 
             $adjunto->mime = $disco->mimeType($adjunto->archivo);
             $adjunto->tamano_bytes = $disco->size($adjunto->archivo);
@@ -69,7 +76,7 @@ class Adjunto extends Model
      */
     public function archivoIntegro(): bool
     {
-        $disco = Storage::disk(self::DISCO);
+        $disco = Storage::disk(self::disco());
 
         return $disco->exists($this->archivo) && hash_equals($this->sha256, hash_file('sha256', $disco->path($this->archivo)));
     }

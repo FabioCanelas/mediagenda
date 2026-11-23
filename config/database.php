@@ -3,6 +3,31 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+/*
+ * PostgreSQL en Supabase. Se configura con variables PG_* para que pueda convivir
+ * con la conexión MariaDB local (la migración de datos usa las dos a la vez).
+ * Tres usuarios, cada uno con lo mínimo: la aplicación, el migrador (dueño de las
+ * tablas) y el administrador de Supabase (solo para crear roles y el esquema).
+ * TLS obligatorio por defecto y hora de Bolivia, igual que el servidor local.
+ */
+$postgres = fn (string $usuario, string $clave): array => [
+    'driver' => 'pgsql',
+    'url' => env('PG_URL'),
+    'host' => env('PG_HOST', '127.0.0.1'),
+    'port' => env('PG_PORT', '5432'),
+    'database' => env('PG_DATABASE', 'postgres'),
+    'username' => env($usuario),
+    'password' => env($clave, ''),
+    'charset' => 'utf8',
+    'prefix' => '',
+    'prefix_indexes' => true,
+    'search_path' => env('PG_SCHEMA', 'mediagenda'),
+    'sslmode' => env('PG_SSLMODE', 'require'),
+    'sslrootcert' => env('PG_SSLROOTCERT'),
+    'timezone' => env('PG_TIMEZONE', 'America/La_Paz'),
+    'application_name' => 'mediagenda',
+];
+
 return [
 
     /*
@@ -108,20 +133,18 @@ return [
             ]) : [],
         ],
 
-        'pgsql' => [
-            'driver' => 'pgsql',
-            'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
-            'charset' => env('DB_CHARSET', 'utf8'),
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
-        ],
+        'pgsql' => $postgres('PG_USERNAME', 'PG_PASSWORD'),
+
+        /*
+         * Uso: php artisan migrate --database=pgsql_migrador
+         */
+        'pgsql_migrador' => $postgres('PG_MIGRATION_USERNAME', 'PG_MIGRATION_PASSWORD'),
+
+        /*
+         * Solo para php artisan base:preparar-postgres (crea roles y esquema).
+         * Las credenciales del administrador no deben quedar en el servidor web.
+         */
+        'pgsql_admin' => array_merge($postgres('PG_ADMIN_USERNAME', 'PG_ADMIN_PASSWORD'), ['search_path' => 'public']),
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',

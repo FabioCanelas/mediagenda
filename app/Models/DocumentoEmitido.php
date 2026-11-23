@@ -26,7 +26,13 @@ class DocumentoEmitido extends Model
 {
     use HasUuids;
 
-    public const DISCO = 'local';
+    /**
+     * Mismo disco privado que los estudios adjuntos (ARCHIVOS_DISCO).
+     */
+    public static function disco(): string
+    {
+        return Adjunto::disco();
+    }
 
     protected static function booted(): void
     {
@@ -86,10 +92,12 @@ class DocumentoEmitido extends Model
     {
         $prefijo = "{$tipo->prefijo()}-{$fecha->year}-";
 
+        // PostgreSQL no admite FOR UPDATE junto a max(): se bloquea la última fila y se lee su folio.
         $ultimo = static::query()
-            ->where('folio', 'like', "{$prefijo}%")
+            ->whereLike('folio', "{$prefijo}%", caseSensitive: true)
+            ->orderByDesc('folio')
             ->lockForUpdate()
-            ->max('folio');
+            ->value('folio');
 
         $numero = $ultimo === null ? 1 : ((int) substr($ultimo, strlen($prefijo))) + 1;
 
@@ -101,7 +109,7 @@ class DocumentoEmitido extends Model
      */
     public function archivoIntegro(): bool
     {
-        $disco = Storage::disk(self::DISCO);
+        $disco = Storage::disk(self::disco());
 
         return $disco->exists($this->archivo) && hash_equals($this->sha256, hash('sha256', (string) $disco->get($this->archivo)));
     }

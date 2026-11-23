@@ -46,6 +46,6 @@ trait DescargaDocumentos
             return null;
         }
 
-        return Storage::disk(DocumentoEmitido::DISCO)->download($documento->archivo, $documento->nombreDescarga());
+        return Storage::disk(DocumentoEmitido::disco())->download($documento->archivo, $documento->nombreDescarga());
     }
 }

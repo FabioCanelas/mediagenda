@@ -9,31 +9,61 @@ use Illuminate\Support\Facades\DB;
  *
  * Las reglas viven en la base además de la aplicación, para que ningún
  * cliente (phpMyAdmin, un script o un error de código) guarde datos inválidos.
- * En SQLite (pruebas) no se aplican.
+ * Funcionan en MariaDB (local) y en PostgreSQL (Supabase); en SQLite (pruebas) no se aplican.
+ *
+ * Las expresiones se escriben una sola vez con la sintaxis de MariaDB
+ * (`columna`, REGEXP) y se traducen a PostgreSQL ("columna", ~) cuando corresponde.
  */
 class Restricciones
 {
     public static function soportado(): bool
     {
+        return self::esMysql() || self::esPostgres();
+    }
+
+    public static function esMysql(): bool
+    {
         return in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
+    }
+
+    public static function esPostgres(): bool
+    {
+        return DB::getDriverName() === 'pgsql';
     }
 
     public static function agregar(string $tabla, string $nombre, string $expresion): void
     {
-        if (! self::soportado()) {
-            return;
+        if (self::esMysql()) {
+            DB::statement("ALTER TABLE `{$tabla}` ADD CONSTRAINT `{$nombre}` CHECK ({$expresion})");
         }
 
-        DB::statement("ALTER TABLE `{$tabla}` ADD CONSTRAINT `{$nombre}` CHECK ({$expresion})");
+        if (self::esPostgres()) {
+            $expresion = self::traducirAPostgres($expresion);
+
+            DB::statement("ALTER TABLE \"{$tabla}\" ADD CONSTRAINT \"{$nombre}\" CHECK ({$expresion})");
+        }
     }
 
     public static function quitar(string $tabla, string $nombre): void
     {
-        if (! self::soportado()) {
-            return;
+        if (self::esMysql()) {
+            DB::statement("ALTER TABLE `{$tabla}` DROP CONSTRAINT IF EXISTS `{$nombre}`");
         }
 
-        DB::statement("ALTER TABLE `{$tabla}` DROP CONSTRAINT IF EXISTS `{$nombre}`");
+        if (self::esPostgres()) {
+            DB::statement("ALTER TABLE \"{$tabla}\" DROP CONSTRAINT IF EXISTS \"{$nombre}\"");
+        }
+    }
+
+    /**
+     * Convierte una expresión escrita para MariaDB a PostgreSQL:
+     * identificadores entre comillas dobles y expresiones regulares con el operador ~.
+     */
+    public static function traducirAPostgres(string $expresion): string
+    {
+        $expresion = str_replace('`', '"', $expresion);
+
+        return (string) preg_replace('/\s+REGEXP\s+/i', ' ~ ', $expresion);
     }
 
     /**

@@ -62,7 +62,7 @@ class AdjuntosRelationManager extends RelationManager
                 FileUpload::make('archivo')
                     ->label('Archivo')
                     ->helperText('PDF, JPG o PNG de hasta 10 MB.')
-                    ->disk(Adjunto::DISCO)
+                    ->disk(Adjunto::disco())
                     ->directory(fn (): string => 'adjuntos/'.$this->getOwnerRecord()->getKey())
                     ->visibility('private')
                     ->acceptedFileTypes(Adjunto::TIPOS_DE_ARCHIVO)
@@ -139,6 +139,6 @@ class AdjuntosRelationManager extends RelationManager
             return null;
         }
 
-        return Storage::disk(Adjunto::DISCO)->download($adjunto->archivo, $adjunto->nombre_original);
+        return Storage::disk(Adjunto::disco())->download($adjunto->archivo, $adjunto->nombre_original);
     }
 }

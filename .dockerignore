@@ -1,0 +1,19 @@
+# Nada de esto entra a la imagen: secretos, datos locales y herramientas de desarrollo.
+.git
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+storage/app/private/*
+storage/app/public/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+database/database.sqlite
+tests
+docs
+.claude
+.ai
+*.log

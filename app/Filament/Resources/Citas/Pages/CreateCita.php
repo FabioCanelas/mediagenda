@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Citas\Pages;
 
 use App\Filament\Resources\Citas\CitaResource;
+use App\Support\BaseDeDatos\ErrorDeBase;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +26,7 @@ class CreateCita extends CreateRecord
         } catch (QueryException $error) {
             Notification::make()
                 ->title('No se pudo agendar')
-                ->body($error->errorInfo[2] ?? 'La base de datos rechazó la cita.')
+                ->body(ErrorDeBase::mensaje($error, 'La base de datos rechazó la cita.'))
                 ->danger()
                 ->send();
 

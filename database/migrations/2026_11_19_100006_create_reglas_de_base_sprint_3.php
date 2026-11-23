@@ -2,6 +2,7 @@
 
 use App\Support\BaseDeDatos\Auditoria;
 use App\Support\BaseDeDatos\Restricciones;
+use App\Support\BaseDeDatos\TriggersPostgres;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -32,25 +33,31 @@ return new class extends Migration
     ];
 
     /**
-     * @var array<int, string>
+     * Trigger => tabla.
+     *
+     * @var array<string, string>
      */
     private array $triggers = [
-        'trg_adjuntos_archivo_inmutable',
-        'trg_consentimientos_solo_firma',
-        'trg_recetas_bloqueo_emitida',
-        'trg_receta_medicamentos_bloqueo_insert',
-        'trg_receta_medicamentos_bloqueo_update',
-        'trg_receta_medicamentos_bloqueo_delete',
-        'trg_documentos_emitidos_validar',
-        'trg_documentos_emitidos_sin_cambios',
-        'trg_documentos_emitidos_sin_borrado',
-        'trg_preconsultas_flujo',
+        'trg_adjuntos_archivo_inmutable' => 'adjuntos',
+        'trg_consentimientos_solo_firma' => 'consentimientos',
+        'trg_recetas_bloqueo_emitida' => 'recetas',
+        'trg_receta_medicamentos_bloqueo_insert' => 'receta_medicamentos',
+        'trg_receta_medicamentos_bloqueo_update' => 'receta_medicamentos',
+        'trg_receta_medicamentos_bloqueo_delete' => 'receta_medicamentos',
+        'trg_documentos_emitidos_validar' => 'documentos_emitidos',
+        'trg_documentos_emitidos_sin_cambios' => 'documentos_emitidos',
+        'trg_documentos_emitidos_sin_borrado' => 'documentos_emitidos',
+        'trg_preconsultas_flujo' => 'preconsultas',
     ];
 
     public function up(): void
     {
-        if (Restricciones::soportado()) {
+        if (Restricciones::esMysql()) {
             $this->crearTriggersDeProteccion();
+        }
+
+        if (Restricciones::esPostgres()) {
+            $this->crearTriggersDeProteccionPostgres();
         }
 
         foreach ($this->tablasAuditadas as $tabla => $excluir) {
@@ -64,11 +71,89 @@ return new class extends Migration
             Auditoria::eliminarTriggers($tabla);
         }
 
-        if (Restricciones::soportado()) {
-            foreach ($this->triggers as $trigger) {
+        foreach ($this->triggers as $trigger => $tabla) {
+            if (Restricciones::esMysql()) {
                 DB::unprepared("DROP TRIGGER IF EXISTS `{$trigger}`");
             }
+
+            if (Restricciones::esPostgres()) {
+                TriggersPostgres::eliminar($tabla, $trigger);
+            }
         }
+    }
+
+    /**
+     * Las mismas reglas que crearTriggersDeProteccion(), escritas en PL/pgSQL.
+     * El operador <=> de MariaDB (igualdad que admite NULL) es IS NOT DISTINCT FROM.
+     */
+    private function crearTriggersDeProteccionPostgres(): void
+    {
+        TriggersPostgres::antesDe('UPDATE', 'adjuntos', 'trg_adjuntos_archivo_inmutable', <<<'SQL'
+            IF NEW.archivo IS DISTINCT FROM OLD.archivo OR NEW.sha256 IS DISTINCT FROM OLD.sha256
+               OR NEW.paciente_id IS DISTINCT FROM OLD.paciente_id THEN
+                RAISE EXCEPTION 'El archivo de un estudio adjunto no se puede reemplazar' USING ERRCODE = '45000';
+            END IF;
+            SQL);
+
+        TriggersPostgres::antesDe('UPDATE', 'consentimientos', 'trg_consentimientos_solo_firma', <<<'SQL'
+            IF NEW.paciente_id IS DISTINCT FROM OLD.paciente_id OR NEW.procedimiento IS DISTINCT FROM OLD.procedimiento
+               OR NEW.fecha IS DISTINCT FROM OLD.fecha OR NEW.lugar IS DISTINCT FROM OLD.lugar
+               OR NEW.firmante_nombre IS DISTINCT FROM OLD.firmante_nombre
+               OR NEW.firmante_es_tutor IS DISTINCT FROM OLD.firmante_es_tutor THEN
+                RAISE EXCEPTION 'Un consentimiento emitido no se modifica; solo se registra la firma' USING ERRCODE = '45000';
+            END IF;
+
+            IF OLD.estado = 'firmado' AND NEW.estado <> 'firmado' THEN
+                RAISE EXCEPTION 'Un consentimiento firmado no vuelve a quedar pendiente' USING ERRCODE = '45000';
+            END IF;
+            SQL);
+
+        TriggersPostgres::antesDe('UPDATE', 'recetas', 'trg_recetas_bloqueo_emitida', <<<'SQL'
+            IF EXISTS (SELECT 1 FROM documentos_emitidos WHERE receta_id = OLD.id) THEN
+                RAISE EXCEPTION 'Una receta emitida no se puede modificar' USING ERRCODE = '45000';
+            END IF;
+            SQL);
+
+        foreach (['insert' => ['INSERT', 'NEW'], 'update' => ['UPDATE', 'OLD'], 'delete' => ['DELETE', 'OLD']] as $sufijo => [$evento, $fila]) {
+            TriggersPostgres::antesDe($evento, 'receta_medicamentos', "trg_receta_medicamentos_bloqueo_{$sufijo}", <<<SQL
+                IF EXISTS (SELECT 1 FROM documentos_emitidos WHERE receta_id = {$fila}.receta_id) THEN
+                    RAISE EXCEPTION 'Los medicamentos de una receta emitida no se pueden cambiar' USING ERRCODE = '45000';
+                END IF;
+                SQL);
+        }
+
+        TriggersPostgres::antesDe('INSERT', 'documentos_emitidos', 'trg_documentos_emitidos_validar', <<<'SQL'
+            IF NEW.receta_id IS NOT NULL
+               AND (SELECT paciente_id FROM recetas WHERE id = NEW.receta_id) IS DISTINCT FROM NEW.paciente_id THEN
+                RAISE EXCEPTION 'La receta es de otro paciente' USING ERRCODE = '45000';
+            END IF;
+
+            IF NEW.consentimiento_id IS NOT NULL
+               AND (SELECT paciente_id FROM consentimientos WHERE id = NEW.consentimiento_id) IS DISTINCT FROM NEW.paciente_id THEN
+                RAISE EXCEPTION 'El consentimiento es de otro paciente' USING ERRCODE = '45000';
+            END IF;
+            SQL);
+
+        TriggersPostgres::antesDe('UPDATE', 'documentos_emitidos', 'trg_documentos_emitidos_sin_cambios', TriggersPostgres::error('Un documento emitido no se puede modificar'));
+        TriggersPostgres::antesDe('DELETE', 'documentos_emitidos', 'trg_documentos_emitidos_sin_borrado', TriggersPostgres::error('Un documento emitido no se puede borrar'));
+
+        TriggersPostgres::antesDe('UPDATE', 'preconsultas', 'trg_preconsultas_flujo', <<<'SQL'
+            IF OLD.estado IN ('revisada', 'descartada') THEN
+                RAISE EXCEPTION 'Una pre-consulta revisada o descartada no se modifica' USING ERRCODE = '45000';
+            END IF;
+
+            IF OLD.estado = 'pendiente' AND NEW.estado = 'enviada' AND OLD.expira_en < LOCALTIMESTAMP THEN
+                RAISE EXCEPTION 'El enlace de la pre-consulta ya vencio' USING ERRCODE = '45000';
+            END IF;
+
+            IF OLD.estado = 'pendiente' AND NEW.estado = 'revisada' THEN
+                RAISE EXCEPTION 'La pre-consulta aun no fue enviada por el paciente' USING ERRCODE = '45000';
+            END IF;
+
+            IF OLD.estado = 'enviada' AND NEW.estado = 'pendiente' THEN
+                RAISE EXCEPTION 'Una pre-consulta enviada no vuelve a quedar pendiente' USING ERRCODE = '45000';
+            END IF;
+            SQL);
     }
 
     private function crearTriggersDeProteccion(): void

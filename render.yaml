@@ -1,0 +1,86 @@
+# Blueprint de Render para MediAgenda (plan gratuito).
+# Render lee este archivo al crear el servicio desde el repositorio de GitHub.
+# Los valores con "sync: false" son secretos: Render los pide al crear el servicio
+# y nunca se guardan en el repositorio.
+services:
+  - type: web
+    name: mediagenda
+    runtime: docker
+    plan: free
+    # Misma región que el proyecto de Supabase (us-east-1): menos demora en cada consulta.
+    region: virginia
+    branch: web
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      # Aplicación en modo producción: sin páginas de depuración.
+      - key: APP_NAME
+        value: MediAgenda
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: APP_LOCALE
+        value: es
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: warning
+
+      # Base de datos en Supabase, solo con el usuario de la aplicación y TLS obligatorio.
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: PG_HOST
+        sync: false
+      - key: PG_PORT
+        value: "5432"
+      - key: PG_DATABASE
+        value: postgres
+      - key: PG_USERNAME
+        sync: false
+      - key: PG_PASSWORD
+        sync: false
+      - key: PG_SCHEMA
+        value: mediagenda
+      - key: PG_SSLMODE
+        value: require
+
+      # Sesiones cortas, cifradas y solo por HTTPS.
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_LIFETIME
+        value: "30"
+      - key: SESSION_ENCRYPT
+        value: "true"
+      - key: SESSION_EXPIRE_ON_CLOSE
+        value: "true"
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+
+      # Estudios y PDF en Supabase Storage (bucket privado).
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: ARCHIVOS_DISCO
+        value: supabase
+      - key: SUPABASE_S3_ENDPOINT
+        sync: false
+      - key: SUPABASE_S3_REGION
+        value: us-east-1
+      - key: SUPABASE_S3_BUCKET
+        value: mediagenda
+      - key: SUPABASE_S3_KEY
+        sync: false
+      - key: SUPABASE_S3_SECRET
+        sync: false
+
+      # Verificación en dos pasos obligatoria para todos los usuarios.
+      - key: MFA_OBLIGATORIO
+        value: "true"

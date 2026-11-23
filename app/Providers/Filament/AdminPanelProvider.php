@@ -34,11 +34,12 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->profile(isSimple: false)
             // Verificación en dos pasos con una app autenticadora y códigos de recuperación.
+            // En la web es obligatoria: nadie entra sin configurarla (MFA_OBLIGATORIO).
             ->multiFactorAuthentication([
                 AppAuthentication::make()
                     ->brandName('MediAgenda')
                     ->recoverable(),
-            ])
+            ], isRequired: fn (): bool => config('mediagenda.seguridad.mfa_obligatorio'))
             ->colors([
                 'primary' => Color::Teal,
             ])

@@ -2,6 +2,7 @@
 
 use App\Support\BaseDeDatos\Auditoria;
 use App\Support\BaseDeDatos\Restricciones;
+use App\Support\BaseDeDatos\TriggersPostgres;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -29,12 +30,33 @@ return new class extends Migration
         'citas',
     ];
 
+    /**
+     * Trigger => tabla.
+     *
+     * @var array<string, string>
+     */
+    private array $triggers = [
+        'trg_notas_evolucion_bloqueo_update' => 'notas_evolucion',
+        'trg_notas_evolucion_bloqueo_delete' => 'notas_evolucion',
+        'trg_anexos_solo_nota_cerrada' => 'notas_evolucion_anexos',
+        'trg_aplicaciones_validar_frasco' => 'aplicaciones',
+        'trg_citas_sin_choque_insert' => 'citas',
+        'trg_citas_sin_choque_update' => 'citas',
+    ];
+
     public function up(): void
     {
         $this->crearVistaProximaAplicacion();
 
-        if (Restricciones::soportado()) {
+        if (Restricciones::esMysql()) {
             $this->crearTriggersDeProteccion();
+        }
+
+        if (Restricciones::esPostgres()) {
+            $this->crearTriggersDeProteccionPostgres();
+        }
+
+        if (Restricciones::soportado()) {
             $this->crearVistaPacientesAtrasados();
         }
 
@@ -49,15 +71,82 @@ return new class extends Migration
             Auditoria::eliminarTriggers($tabla);
         }
 
-        if (Restricciones::soportado()) {
-            foreach (['trg_notas_evolucion_bloqueo_update', 'trg_notas_evolucion_bloqueo_delete', 'trg_anexos_solo_nota_cerrada', 'trg_aplicaciones_validar_frasco', 'trg_citas_sin_choque_insert', 'trg_citas_sin_choque_update'] as $trigger) {
+        foreach ($this->triggers as $trigger => $tabla) {
+            if (Restricciones::esMysql()) {
                 DB::unprepared("DROP TRIGGER IF EXISTS `{$trigger}`");
             }
 
+            if (Restricciones::esPostgres()) {
+                TriggersPostgres::eliminar($tabla, $trigger);
+            }
+        }
+
+        if (Restricciones::soportado()) {
             DB::statement('DROP VIEW IF EXISTS v_pacientes_atrasados');
         }
 
         DB::statement('DROP VIEW IF EXISTS v_proxima_aplicacion');
+    }
+
+    /**
+     * Las mismas reglas que crearTriggersDeProteccion(), escritas en PL/pgSQL.
+     */
+    private function crearTriggersDeProteccionPostgres(): void
+    {
+        TriggersPostgres::antesDe('UPDATE', 'notas_evolucion', 'trg_notas_evolucion_bloqueo_update', <<<'SQL'
+            IF OLD.estado = 'cerrada' THEN
+                RAISE EXCEPTION 'Una nota de evolucion cerrada no se puede modificar' USING ERRCODE = '45000';
+            END IF;
+            SQL);
+
+        TriggersPostgres::antesDe('DELETE', 'notas_evolucion', 'trg_notas_evolucion_bloqueo_delete', <<<'SQL'
+            IF OLD.estado = 'cerrada' THEN
+                RAISE EXCEPTION 'Una nota de evolucion cerrada no se puede borrar' USING ERRCODE = '45000';
+            END IF;
+            SQL);
+
+        TriggersPostgres::antesDe('INSERT', 'notas_evolucion_anexos', 'trg_anexos_solo_nota_cerrada', <<<'SQL'
+            IF (SELECT estado FROM notas_evolucion WHERE id = NEW.nota_evolucion_id) IS DISTINCT FROM 'cerrada' THEN
+                RAISE EXCEPTION 'Solo se agregan anexos a notas cerradas' USING ERRCODE = '45000';
+            END IF;
+            SQL);
+
+        TriggersPostgres::antesDe('INSERT', 'aplicaciones', 'trg_aplicaciones_validar_frasco', <<<'SQL'
+            DECLARE
+                frasco RECORD;
+            BEGIN
+                SELECT inmunoterapia_id, fecha_vencimiento, activo INTO frasco
+                  FROM frascos WHERE id = NEW.frasco_id;
+
+                IF frasco.inmunoterapia_id IS DISTINCT FROM NEW.inmunoterapia_id THEN
+                    RAISE EXCEPTION 'El frasco pertenece a otro tratamiento' USING ERRCODE = '45000';
+                END IF;
+
+                IF frasco.fecha_vencimiento < NEW.aplicada_en::date THEN
+                    RAISE EXCEPTION 'No se puede aplicar un frasco vencido' USING ERRCODE = '45000';
+                END IF;
+
+                IF NOT frasco.activo THEN
+                    RAISE EXCEPTION 'El frasco esta dado de baja' USING ERRCODE = '45000';
+                END IF;
+            END;
+            SQL);
+
+        foreach (['insert' => 'INSERT', 'update' => 'UPDATE'] as $sufijo => $evento) {
+            $excluirMisma = $evento === 'UPDATE' ? 'AND c.id <> NEW.id' : '';
+
+            TriggersPostgres::antesDe($evento, 'citas', "trg_citas_sin_choque_{$sufijo}", <<<SQL
+                IF NEW.estado NOT IN ('cancelada', 'no_asistio') AND EXISTS (
+                    SELECT 1 FROM citas c
+                     WHERE c.estado NOT IN ('cancelada', 'no_asistio')
+                       AND c.inicio < NEW.fin
+                       AND c.fin > NEW.inicio
+                       {$excluirMisma}
+                ) THEN
+                    RAISE EXCEPTION 'Choque de horario con otra cita' USING ERRCODE = '45000';
+                END IF;
+                SQL);
+        }
     }
 
     private function crearTriggersDeProteccion(): void
@@ -145,11 +234,11 @@ return new class extends Migration
      */
     private function crearVistaProximaAplicacion(): void
     {
-        $esMysql = Restricciones::soportado();
-
-        $sumarDias = fn (string $fecha, string $dias): string => $esMysql
-            ? "DATE_ADD(DATE({$fecha}), INTERVAL {$dias} DAY)"
-            : "date({$fecha}, '+' || {$dias} || ' days')";
+        $sumarDias = fn (string $fecha, string $dias): string => match (true) {
+            Restricciones::esMysql() => "DATE_ADD(DATE({$fecha}), INTERVAL {$dias} DAY)",
+            Restricciones::esPostgres() => "(({$fecha})::date + ({$dias})::integer)",
+            default => "date({$fecha}, '+' || {$dias} || ' days')",
+        };
 
         $mantenimiento = $sumarDias('ua.aplicada_en', 'COALESCE(i.intervalo_mantenimiento_dias, 28)');
         $inicio = $sumarDias('ua.aplicada_en', 'COALESCE(ed.intervalo_dias, 7)');
@@ -182,6 +271,26 @@ return new class extends Migration
      */
     private function crearVistaPacientesAtrasados(): void
     {
+        if (Restricciones::esPostgres()) {
+            DB::statement(<<<'SQL'
+                CREATE VIEW v_pacientes_atrasados AS
+                SELECT v.inmunoterapia_id,
+                       v.paciente_id,
+                       p.ci,
+                       CONCAT_WS(' ', p.nombres, p.apellido_paterno, p.apellido_materno) AS paciente,
+                       v.fase,
+                       v.ultima_aplicacion,
+                       v.fecha_prevista,
+                       (CURRENT_DATE - v.fecha_prevista) AS dias_atraso
+                  FROM v_proxima_aplicacion v
+                  JOIN pacientes p ON p.id = v.paciente_id
+                 WHERE v.fecha_prevista < CURRENT_DATE
+                   AND p.deleted_at IS NULL
+                SQL);
+
+            return;
+        }
+
         DB::statement(<<<'SQL'
             CREATE VIEW v_pacientes_atrasados AS
             SELECT v.inmunoterapia_id,
