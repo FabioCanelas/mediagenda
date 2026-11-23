@@ -30,7 +30,8 @@ use RuntimeException;
     {--desde=mysql_migrador : Conexión de origen (MariaDB)}
     {--hacia=pgsql_migrador : Conexión de destino (PostgreSQL), con el usuario dueño de las tablas}
     {--vaciar : Vacía las tablas de destino antes de copiar}
-    {--archivos : Copia también los estudios y los PDF al disco de archivos configurado}')]
+    {--archivos : Copia también los estudios y los PDF al disco de archivos configurado}
+    {--solo-archivos : Solo sube los estudios y los PDF; no toca los datos ya copiados}')]
 #[Description('Copia los datos de MariaDB a PostgreSQL (Supabase) y verifica que no falte nada')]
 class MigrarDatosAPostgres extends Command
 {
@@ -50,6 +51,20 @@ class MigrarDatosAPostgres extends Command
             $this->error('El origen debe ser MariaDB y el destino PostgreSQL.');
 
             return self::FAILURE;
+        }
+
+        if ($this->option('solo-archivos')) {
+            $problemas = $this->copiarArchivos($destino);
+
+            if ($problemas > 0) {
+                $this->error("Hubo {$problemas} archivo(s) con problemas.");
+
+                return self::FAILURE;
+            }
+
+            $this->info('Archivos subidos y verificados.');
+
+            return self::SUCCESS;
         }
 
         $tablas = $this->tablasEnOrden($destino);
