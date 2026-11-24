@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\TipoAdjunto;
 use App\Models\Concerns\RegistraAutor;
 use Database\Factories\AdjuntoFactory;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
+use RuntimeException;
 
 /**
  * Estudio adjunto al expediente (HU-08). Al guardarse toma del archivo real
@@ -41,7 +43,7 @@ class Adjunto extends Model
 
             $adjunto->mime = $disco->mimeType($adjunto->archivo);
             $adjunto->tamano_bytes = $disco->size($adjunto->archivo);
-            $adjunto->sha256 = hash_file('sha256', $disco->path($adjunto->archivo));
+            $adjunto->sha256 = self::huella($disco, $adjunto->archivo);
             $adjunto->nombre_original ??= basename($adjunto->archivo);
         });
     }
@@ -78,7 +80,26 @@ class Adjunto extends Model
     {
         $disco = Storage::disk(self::disco());
 
-        return $disco->exists($this->archivo) && hash_equals($this->sha256, hash_file('sha256', $disco->path($this->archivo)));
+        return $disco->exists($this->archivo) && hash_equals($this->sha256, self::huella($disco, $this->archivo));
+    }
+
+    /**
+     * Huella SHA-256 leída del disco por partes. Sirve igual para el disco local y
+     * para Supabase Storage (S3), donde el archivo no tiene una ruta en el servidor.
+     */
+    private static function huella(Filesystem $disco, string $ruta): string
+    {
+        $flujo = $disco->readStream($ruta);
+
+        if (! is_resource($flujo)) {
+            throw new RuntimeException("No se pudo leer el archivo {$ruta}.");
+        }
+
+        $contexto = hash_init('sha256');
+        hash_update_stream($contexto, $flujo);
+        fclose($flujo);
+
+        return hash_final($contexto);
     }
 
     public function tamanoLegible(): string
