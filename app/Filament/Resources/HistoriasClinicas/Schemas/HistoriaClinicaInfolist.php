@@ -25,7 +25,7 @@ class HistoriaClinicaInfolist
                         TextEntry::make('antecedentes_heredofamiliares')->label('Antecedentes heredofamiliares')->placeholder('—'),
                         TextEntry::make('antecedentes_personales_patologicos')->label('Antecedentes personales patológicos')->placeholder('—'),
                         TextEntry::make('antecedentes_personales_no_patologicos')->label('Antecedentes personales no patológicos')->placeholder('—'),
-                        TextEntry::make('interrogatorio_aparatos_sistemas')->label('Interrogatorio por aparatos y sistemas')->placeholder('—'),
+                        TextEntry::make('interrogatorio_aparatos_sistemas')->label('Revisión de otros síntomas, sistema por sistema')->placeholder('—'),
                     ]),
                 Section::make('Exploración física')
                     ->columns(4)

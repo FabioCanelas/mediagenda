@@ -66,8 +66,10 @@ class HistoriaClinicaForm
                                     ->helperText('Vivienda (humedad, alfombras, peluches), mascotas, ocupación y alimentación.')
                                     ->rows(3),
                                 Textarea::make('interrogatorio_aparatos_sistemas')
-                                    ->label('Interrogatorio por aparatos y sistemas')
-                                    ->rows(3),
+                                    ->label('Revisión de otros síntomas, sistema por sistema')
+                                    ->helperText('Interrogatorio por aparatos y sistemas: pregunte por cada uno y anote lo que tiene y lo que niega (ojos; nariz y garganta; respiratorio; piel; digestivo; generales).')
+                                    ->placeholder("Ej.: Ojos: prurito y lagrimeo matutino.\nRespiratorio: niega tos y sibilancias.\nPiel: niega ronchas o eccema.")
+                                    ->rows(7),
                             ]),
                         Tab::make('Exploración física')
                             ->components([

@@ -75,7 +75,7 @@ class EditHistoriaClinica extends EditRecord
             'antecedentes_personales_patologicos' => 'Antecedentes personales patológicos',
             'antecedentes_personales_no_patologicos' => 'Antecedentes personales no patológicos',
             'padecimiento_actual' => 'Padecimiento actual',
-            'interrogatorio_aparatos_sistemas' => 'Interrogatorio por aparatos y sistemas',
+            'interrogatorio_aparatos_sistemas' => 'Revisión de otros síntomas, sistema por sistema',
             'habitus_exterior' => 'Habitus exterior',
             'presion_sistolica' => 'Presión sistólica',
             'presion_diastolica' => 'Presión diastólica',
