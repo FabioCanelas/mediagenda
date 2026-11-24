@@ -29,6 +29,12 @@ class InmunoterapiaResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Consultorio';
 
+    /**
+     * Fuera del menú: se abre desde la ficha del paciente (pestañas y botones)
+     * para que la doctora tenga menos lugares donde buscar.
+     */
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 5;
 
     protected static ?string $navigationLabel = 'Inmunoterapia';

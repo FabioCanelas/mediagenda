@@ -71,18 +71,22 @@ class PacienteForm
                             ->label('Sexo')
                             ->options(Sexo::class)
                             ->required(),
-                        TextInput::make('ocupacion')
-                            ->label('Ocupación')
-                            ->maxLength(80),
-                    ]),
-                Section::make('Contacto')
-                    ->columns(3)
-                    ->columnSpanFull()
-                    ->components([
                         TextInput::make('celular')
                             ->label('Celular')
                             ->tel()
                             ->maxLength(20),
+                    ]),
+                // Lo que no hace falta para atender hoy: plegado al registrar, abierto al editar.
+                Section::make('Más datos (opcional)')
+                    ->description('Ocupación, correo, dirección y contacto de emergencia.')
+                    ->collapsible()
+                    ->collapsed(fn (string $operation): bool => $operation === 'create')
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->components([
+                        TextInput::make('ocupacion')
+                            ->label('Ocupación')
+                            ->maxLength(80),
                         TextInput::make('email')
                             ->label('Correo electrónico')
                             ->email()

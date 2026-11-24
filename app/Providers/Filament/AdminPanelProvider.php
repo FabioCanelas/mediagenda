@@ -45,7 +45,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make('Consultorio'),
-                NavigationGroup::make('Configuración'),
+                NavigationGroup::make('Configuración')
+                    ->collapsed(),
             ])
             ->unsavedChangesAlerts()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

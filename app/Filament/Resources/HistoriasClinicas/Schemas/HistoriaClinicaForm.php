@@ -10,6 +10,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -106,32 +107,41 @@ class HistoriaClinicaForm
                                     ->defaultItems(0)
                                     ->columns(3)
                                     ->components([
+                                        // Un solo buscador por nombre: el código CIE-10 se guarda solo
+                                        // (sirve para reportes y seguros) sin que la doctora lo escriba.
                                         Select::make('cie10_codigo')
-                                            ->label('CIE-10')
+                                            ->label('Diagnóstico')
+                                            ->placeholder('Escriba, por ejemplo, rinitis o asma')
                                             ->searchable()
+                                            ->searchPrompt('Escriba parte del nombre del diagnóstico')
+                                            ->noSearchResultsMessage('No está en la lista: escríbalo abajo con sus palabras.')
                                             ->getSearchResultsUsing(fn (string $search): array => Cie10::query()
                                                 ->where('activo', true)
                                                 ->where(fn (Builder $query) => $query
                                                     ->whereLike('codigo', "{$search}%")
                                                     ->orWhereLike('descripcion', "%{$search}%"))
-                                                ->orderBy('codigo')
+                                                ->orderBy('descripcion')
                                                 ->limit(30)
                                                 ->get()
-                                                ->mapWithKeys(fn (Cie10 $cie10): array => [$cie10->codigo => $cie10->etiqueta])
+                                                ->mapWithKeys(fn (Cie10 $cie10): array => [$cie10->codigo => self::nombreDiagnostico($cie10)])
                                                 ->all())
-                                            ->getOptionLabelUsing(fn (?string $value): ?string => Cie10::find($value)?->etiqueta)
+                                            ->getOptionLabelUsing(fn (?string $value): ?string => ($cie10 = Cie10::find($value)) ? self::nombreDiagnostico($cie10) : null)
                                             ->live()
-                                            ->helperText('Si no está en el catálogo, escríbelo en Descripción.')
                                             ->columnSpan(2),
-                                        Select::make('tipo')
+                                        ToggleButtons::make('tipo')
                                             ->label('Tipo')
                                             ->options(TipoDiagnostico::class)
                                             ->default(TipoDiagnostico::Principal)
+                                            ->grouped()
                                             ->required(),
+                                        // Solo aparece si no se eligió nada de la lista (o si ya tenía texto).
                                         TextInput::make('descripcion')
-                                            ->label('Descripción')
+                                            ->label(fn (Get $get): string => blank($get('cie10_codigo'))
+                                                ? '¿No está en la lista? Escríbalo con sus palabras'
+                                                : 'Detalle del diagnóstico')
+                                            ->visible(fn (Get $get): bool => blank($get('cie10_codigo')) || filled($get('descripcion')))
                                             ->required(fn (Get $get): bool => blank($get('cie10_codigo')))
-                                            ->validationMessages(['required' => 'Elige un código CIE-10 o escribe el diagnóstico.'])
+                                            ->validationMessages(['required' => 'Elija un diagnóstico de la lista o escríbalo con sus palabras.'])
                                             ->maxLength(255)
                                             ->columnSpanFull(),
                                     ]),
@@ -145,5 +155,14 @@ class HistoriaClinicaForm
                             ]),
                     ]),
             ]);
+    }
+
+    /**
+     * Nombre primero y código al final, para quien no conoce los códigos:
+     * "Otras rinitis alérgicas (J30.3)".
+     */
+    private static function nombreDiagnostico(Cie10 $cie10): string
+    {
+        return "{$cie10->descripcion} ({$cie10->codigo})";
     }
 }
