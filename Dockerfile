@@ -22,9 +22,11 @@ RUN apt-get update \
 # Endurecimiento de PHP y Apache: sin versiones en las cabeceras ni listados de carpetas.
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY docker/php.ini "$PHP_INI_DIR/conf.d/zz-mediagenda.ini"
-COPY docker/apache.conf /etc/apache2/conf-available/mediagenda.conf
+# "zz-" hace que se cargue después de security.conf de Debian (orden alfabético);
+# si se cargara antes, su ServerTokens OS volvería a mostrar la versión de Apache.
+COPY docker/apache.conf /etc/apache2/conf-available/zz-mediagenda.conf
 RUN a2enmod rewrite headers \
-    && a2enconf mediagenda \
+    && a2enconf zz-mediagenda \
     && sed -ri 's#/var/www/html#/var/www/html/public#g' /etc/apache2/sites-available/000-default.conf
 
 WORKDIR /var/www/html
